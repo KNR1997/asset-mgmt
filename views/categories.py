@@ -1,22 +1,24 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-import sqlite3
+from services import category_service as service
 
-class AssetsView:
+
+class CategoriesView:
     def __init__(self, parent):
         self.frame = tk.Frame(parent)
         self.frame.pack(fill="both", expand=True)
 
-        tk.Label(self.frame, text="Assets", font=("Arial", 16)).pack(pady=10)
+        tk.Label(self.frame, text="Categories",
+                 font=("Arial", 16)).pack(pady=10)
 
         # Top section (buttons + search)
         top = tk.Frame(self.frame)
         top.pack(fill="x", padx=10)
 
-        tk.Button(top, text="Add Asset", command=self.open_add_modal)\
+        tk.Button(top, text="Add Category", command=self.open_add_modal)\
             .pack(side="left", padx=5)
 
-        tk.Button(top, text="Delete Selected", command=self.delete_asset)\
+        tk.Button(top, text="Delete Selected", command=self.delete_category)\
             .pack(side="left", padx=5)
 
         # Search field (right aligned)
@@ -31,13 +33,13 @@ class AssetsView:
         # Table
         self.tree = ttk.Treeview(
             self.frame,
-            columns=("ID", "Name", "Status"),
+            columns=("ID", "Name"),
             show="headings"
         )
 
         self.tree.heading("ID", text="ID")
         self.tree.heading("Name", text="Name")
-        self.tree.heading("Status", text="Status")
+        # self.tree.heading("Status", text="Status")
 
         self.tree.column("ID", width=50)
 
@@ -46,37 +48,29 @@ class AssetsView:
         # Double click to edit
         self.tree.bind("<Double-1>", self.on_double_click)
 
-        self.load_assets()
+        self.load_categories()
 
     # ---------------- LOAD ---------------- #
 
-    def load_assets(self, keyword=""):
+    def load_categories(self, keyword=""):
         for row in self.tree.get_children():
             self.tree.delete(row)
 
-        conn = sqlite3.connect("assets.db")
-        cur = conn.cursor()
+        rows = service.get_all(keyword)
 
-        if keyword:
-            cur.execute("SELECT * FROM assets WHERE name LIKE ?", ('%' + keyword + '%',))
-        else:
-            cur.execute("SELECT * FROM assets")
-
-        for row in cur.fetchall():
+        for row in rows:
             self.tree.insert("", tk.END, values=row)
-
-        conn.close()
 
     # ---------------- SEARCH ---------------- #
 
     def on_search(self, *args):
         keyword = self.search_var.get()
-        self.load_assets(keyword)
+        self.load_categories(keyword)
 
     # ---------------- ADD / EDIT ---------------- #
 
     def open_add_modal(self):
-        self.open_form("Add Asset")
+        self.open_form("Add Category")
 
     def open_form(self, title, asset=None):
         modal = tk.Toplevel()
@@ -87,7 +81,7 @@ class AssetsView:
         modal.update_idletasks()
         modal.grab_set()
 
-        tk.Label(modal, text="Asset Name").pack(pady=5)
+        tk.Label(modal, text="Category Name").pack(pady=5)
         name_entry = tk.Entry(modal)
         name_entry.pack()
 
@@ -95,21 +89,19 @@ class AssetsView:
             name_entry.insert(0, asset[1])
 
         def save():
-            conn = sqlite3.connect("assets.db")
-            cur = conn.cursor()
+            name = name_entry.get()
+
+            if not name:
+                messagebox.showwarning("Warning", "Enter name")
+                return
 
             if asset:
-                cur.execute("UPDATE assets SET name=? WHERE id=?",
-                            (name_entry.get(), asset[0]))
+                service.update(asset[0], name)
             else:
-                cur.execute("INSERT INTO assets (name, status) VALUES (?, ?)",
-                            (name_entry.get(), "available"))
-
-            conn.commit()
-            conn.close()
+                service.insert(name)
 
             modal.destroy()
-            self.load_assets()
+            self.load_categories()
 
         tk.Button(modal, text="Save", command=save).pack(pady=10)
 
@@ -118,11 +110,11 @@ class AssetsView:
         values = self.tree.item(selected, "values")
 
         if values:
-            self.open_form("Edit Asset", values)
+            self.open_form("Edit Category", values)
 
     # ---------------- DELETE ---------------- #
 
-    def delete_asset(self):
+    def delete_category(self):
         selected = self.tree.focus()
         values = self.tree.item(selected, "values")
 
@@ -130,16 +122,9 @@ class AssetsView:
             messagebox.showwarning("Warning", "Select a row")
             return
 
-        confirm = messagebox.askyesno("Confirm", "Delete this asset?")
+        confirm = messagebox.askyesno("Confirm", "Delete this category?")
         if not confirm:
             return
 
-        conn = sqlite3.connect("assets.db")
-        cur = conn.cursor()
-
-        cur.execute("DELETE FROM assets WHERE id=?", (values[0],))
-
-        conn.commit()
-        conn.close()
-
-        self.load_assets()
+        service.delete(values[0])
+        self.load_categories()

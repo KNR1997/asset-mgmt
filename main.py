@@ -1,5 +1,5 @@
 import tkinter as tk
-from login import Login
+from views.login import Login
 from db import setup
 
 setup()

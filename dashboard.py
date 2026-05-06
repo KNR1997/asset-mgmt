@@ -1,5 +1,6 @@
 import tkinter as tk
 
+
 class Dashboard:
     def __init__(self, root):
         self.root = root
@@ -25,6 +26,12 @@ class Dashboard:
         tk.Button(self.sidebar, text="Employees", fg="white", bg="#34495e",
                   command=self.show_employees, height=2).pack(fill="x", pady=5)
 
+        tk.Button(self.sidebar, text="Categories", fg="white", bg="#34495e",
+                  command=self.show_categories, height=2).pack(fill="x", pady=5)
+
+        tk.Button(self.sidebar, text="Asset Models", fg="white", bg="#34495e",
+                  command=self.show_asset_models, height=2).pack(fill="x", pady=5)
+
         # Default view
         self.show_assets()
 
@@ -34,10 +41,20 @@ class Dashboard:
 
     def show_assets(self):
         self.clear_content()
-        from assets import AssetsView
+        from views.assets import AssetsView
         AssetsView(self.content)
 
     def show_employees(self):
         self.clear_content()
-        from employees import EmployeesView
+        from views.employees import EmployeesView
         EmployeesView(self.content)
+
+    def show_categories(self):
+        self.clear_content()
+        from views.categories import CategoriesView
+        CategoriesView(self.content)
+
+    def show_asset_models(self):
+        self.clear_content()
+        from views.asset_models import AssetModelsView
+        AssetModelsView(self.content)
