@@ -1,32 +1,48 @@
 import sqlite3
+from models.model import Model
 
 DB_NAME = "assets.db"
 
 
-def get_all(keyword=""):
+def get_all(keyword="") -> list[Model]:
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
     if keyword:
         cur.execute("""
-            SELECT models.id, models.name, models.modelNumber, categories.name
+            SELECT models.id, models.name, models.modelNumber, categories.id, categories.name, models.description
             FROM models
             LEFT JOIN categories ON models.category_id = categories.id
             WHERE models.name LIKE ?
         """, ('%' + keyword + '%',))
     else:
         cur.execute("""
-            SELECT models.id, models.name, models.modelNumber, categories.name
+            SELECT models.id, models.name, models.modelNumber, categories.id, categories.name, models.description
             FROM models
             LEFT JOIN categories ON models.category_id = categories.id
         """)
 
-    data = cur.fetchall()
+    rows = cur.fetchall()
     conn.close()
-    return data
+
+    models = []
+
+    for row in rows:
+        models.append(
+            Model(
+                id=row[0],
+                name=row[1],
+                modelNumber=row[2],
+                category_id=row[3],
+                category_name=row[4],
+                description=row[5]
+            )
+        )
+
+    return models
 
 
-def insert(name, model_id, desc, category_id):
+def insert(name, modelNumber, description, category_id):
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
@@ -35,8 +51,8 @@ def insert(name, model_id, desc, category_id):
         VALUES (?, ?, ?, ?)
     """, (
         name,
-        model_id,
-        desc,
+        modelNumber,
+        description,
         category_id,
     ))
 
@@ -44,12 +60,12 @@ def insert(name, model_id, desc, category_id):
     conn.close()
 
 
-def update(name, model_id, desc, category_id):
+def update(model_id, name, modelNumber, description, category_id):
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
     cur.execute("UPDATE models SET name=? WHERE id=?",
-                (name, model_id, desc, category_id))
+                (name, model_id))
 
     conn.commit()
     conn.close()

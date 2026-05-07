@@ -1,10 +1,13 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-import sqlite3
-
+from services import model_service as model_service
+from services import category_service as category_service
+from models.model import Model
+from typing import Optional
 
 class AssetModelsView:
     def __init__(self, parent):
+        self.models = []
         self.frame = tk.Frame(parent)
         self.frame.pack(fill="both", expand=True)
 
@@ -18,7 +21,7 @@ class AssetModelsView:
         tk.Button(top, text="Add Asset Model", command=self.open_add_modal)\
             .pack(side="left", padx=5)
 
-        tk.Button(top, text="Delete Selected", command=self.delete_category)\
+        tk.Button(top, text="Delete Selected", command=self.delete_model)\
             .pack(side="left", padx=5)
 
         # Search field (right aligned)
@@ -57,27 +60,21 @@ class AssetModelsView:
         for row in self.tree.get_children():
             self.tree.delete(row)
 
-        conn = sqlite3.connect("assets.db")
-        cur = conn.cursor()
+        rows = model_service.get_all(keyword)
 
-        if keyword:
-            cur.execute("""
-                SELECT models.id, models.name, models.modelNumber, categories.name
-                FROM models
-                LEFT JOIN categories ON models.category_id = categories.id
-                WHERE models.name LIKE ?
-            """, ('%' + keyword + '%',))
-        else:
-            cur.execute("""
-                SELECT models.id, models.name, models.modelNumber, categories.name
-                FROM models
-                LEFT JOIN categories ON models.category_id = categories.id
-            """)
+        for model in rows:
+            self.tree.insert(
+                "",
+                tk.END,
+                values=(
+                    model.id,
+                    model.name,
+                    model.modelNumber,
+                    model.category_name,
+                )
+            )
 
-        for row in cur.fetchall():
-            self.tree.insert("", tk.END, values=row)
-
-        conn.close()
+        self.models = rows
 
     # ---------------- SEARCH ---------------- #
 
@@ -90,7 +87,7 @@ class AssetModelsView:
     def open_add_modal(self):
         self.open_form("Add Category")
 
-    def open_form(self, title, asset=None):
+    def open_form(self, title, model: Optional[Model] = None):
         modal = tk.Toplevel()
         modal.title(title)
         modal.geometry("350x300")
@@ -100,25 +97,17 @@ class AssetModelsView:
         modal.grab_set()
 
         # ---------------- LOAD CATEGORIES ---------------- #
-        conn = sqlite3.connect("assets.db")
-        cur = conn.cursor()
-
-        cur.execute("SELECT id, name FROM categories")
-        categories = cur.fetchall()
-
-        conn.close()
-
-        category_map = {c[1]: c[0] for c in categories}
+        categories =  category_service.get_all()
+        category_map = {c.name: c.id for c in categories}
 
         # ---------------- FORM ---------------- #
-
         tk.Label(modal, text="Model Name").pack()
         name_entry = tk.Entry(modal)
         name_entry.pack()
 
         tk.Label(modal, text="Model Number").pack()
-        model_no_entry = tk.Entry(modal)
-        model_no_entry.pack()
+        model_number_entry = tk.Entry(modal)
+        model_number_entry.pack()
 
         tk.Label(modal, text="Description").pack()
         desc_entry = tk.Entry(modal)
@@ -134,12 +123,12 @@ class AssetModelsView:
 
         # ---------------- PREFILL (EDIT) ---------------- #
 
-        if asset:
-            name_entry.insert(0, asset[1])
-            model_no_entry.insert(0, asset[2])
+        if model:
+            name_entry.insert(0, model.name)
+            model_number_entry.insert(0, model.modelNumber)
 
             # set category name
-            category_combo.set(asset[3] if asset[3] else "")
+            category_combo.set(model.category_name if model.category_name else "")
 
         # ---------------- SAVE ---------------- #
 
@@ -152,34 +141,25 @@ class AssetModelsView:
 
             category_id = category_map[selected_category]
 
-            conn = sqlite3.connect("assets.db")
-            cur = conn.cursor()
+            name = name_entry.get()
+            model_number = model_number_entry.get()
+            description = name_entry.get()
 
-            if asset:
-                cur.execute("""
-                    UPDATE models 
-                    SET name=?, modelNumber=?, description=?, category_id=? 
-                    WHERE id=?
-                """, (
-                    name_entry.get(),
-                    model_no_entry.get(),
-                    desc_entry.get(),
-                    category_id,
-                    asset[0]
-                ))
+            if model:
+                model_service.update(
+                    model_id=model.id,
+                    name=name,
+                    modelNumber=model_number,
+                    description=description,
+                    category_id=category_id,
+                )
             else:
-                cur.execute("""
-                    INSERT INTO models (name, modelNumber, description, category_id)
-                    VALUES (?, ?, ?, ?)
-                """, (
-                    name_entry.get(),
-                    model_no_entry.get(),
-                    desc_entry.get(),
-                    category_id
-                ))
-
-            conn.commit()
-            conn.close()
+                model_service.insert(
+                    name=name,
+                    modelNumber=model_number,
+                    description=description,
+                    category_id=category_id,
+                )
 
             modal.destroy()
             self.load_asset_models()
@@ -188,14 +168,17 @@ class AssetModelsView:
 
     def on_double_click(self, event):
         selected = self.tree.focus()
+        selected_index = self.tree.index(selected)
         values = self.tree.item(selected, "values")
 
+        model = self.models[selected_index]
+
         if values:
-            self.open_form("Edit Category", values)
+            self.open_form("Edit Model", model)
 
     # ---------------- DELETE ---------------- #
 
-    def delete_category(self):
+    def delete_model(self):
         selected = self.tree.focus()
         values = self.tree.item(selected, "values")
 
@@ -203,16 +186,9 @@ class AssetModelsView:
             messagebox.showwarning("Warning", "Select a row")
             return
 
-        confirm = messagebox.askyesno("Confirm", "Delete this category?")
+        confirm = messagebox.askyesno("Confirm", "Delete this model?")
         if not confirm:
             return
 
-        conn = sqlite3.connect("assets.db")
-        cur = conn.cursor()
-
-        cur.execute("DELETE FROM models WHERE id=?", (values[0],))
-
-        conn.commit()
-        conn.close()
-
+        model_service.delete(values[0])
         self.load_asset_models()

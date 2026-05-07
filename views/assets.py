@@ -1,10 +1,14 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-import sqlite3
+from services import asset_service as asset_service
+from services import model_service as model_service
+from models.asset import Asset
+from typing import Optional
 
 
 class AssetsView:
     def __init__(self, parent):
+        self.assets = []
         self.frame = tk.Frame(parent)
         self.frame.pack(fill="both", expand=True)
 
@@ -32,7 +36,8 @@ class AssetsView:
         # Table
         self.tree = ttk.Treeview(
             self.frame,
-            columns=("Asset Tag", "Asset Name", "Serial", "Model", "Category", "Status"),
+            columns=("Asset Tag", "Asset Name", "Serial",
+                     "Model", "Category", "Status"),
             show="headings"
         )
 
@@ -58,29 +63,23 @@ class AssetsView:
         for row in self.tree.get_children():
             self.tree.delete(row)
 
-        conn = sqlite3.connect("assets.db")
-        cur = conn.cursor()
+        rows = asset_service.get_all(keyword)
 
-        if keyword:
-            cur.execute("""
-                SELECT assets.tag, assets.name, assets.serialNumber, models.name, categories.name, assets.status 
-                FROM assets
-                LEFT JOIN models ON assets.model_id = models.id
-                LEFT JOIN categories ON models.category_id = categories.id
-                WHERE assets.name LIKE ?
-            """, ('%' + keyword + '%',))
-        else:
-            cur.execute("""
-                SELECT assets.tag, assets.name, assets.serialNumber, models.name, categories.name, assets.status 
-                FROM assets
-                LEFT JOIN models ON assets.model_id = models.id
-                LEFT JOIN categories ON models.category_id = categories.id
-            """)
+        for asset in rows:
+            self.tree.insert(
+                "",
+                tk.END,
+                values=(
+                    asset.tag,
+                    asset.name,
+                    asset.serial_number,
+                    asset.model_name,
+                    asset.category_name,
+                    asset.status
+                )
+            )
 
-        for row in cur.fetchall():
-            self.tree.insert("", tk.END, values=row)
-
-        conn.close()
+        self.assets = rows
 
     # ---------------- SEARCH ---------------- #
 
@@ -93,7 +92,7 @@ class AssetsView:
     def open_add_modal(self):
         self.open_form("Add Asset")
 
-    def open_form(self, title, asset=None):
+    def open_form(self, title, asset: Optional[Asset] = None):
         modal = tk.Toplevel()
         modal.title(title)
         modal.geometry("350x400")
@@ -103,17 +102,8 @@ class AssetsView:
         modal.grab_set()
 
         # ---------------- LOAD MODELS ---------------- #
-        conn = sqlite3.connect("assets.db")
-        cur = conn.cursor()
-
-        cur.execute("SELECT id, name FROM models")
-        models = cur.fetchall()
-
-        print('fetch models----------: ', models)
-
-        conn.close()
-
-        model_map = {c[1]: c[0] for c in models}
+        models = model_service.get_all()
+        model_map = {model.name:  model.id for model in models}
 
         status_map = {
             "Pending",
@@ -158,14 +148,16 @@ class AssetsView:
         desc_entry.pack()
 
         if asset:
-            name_entry.insert(0, asset[1])
+            tag_entry.insert(0, asset.tag)
+            name_entry.insert(0, asset.name)
+            serial_entry.insert(0, asset.serial_number)
+            model_combo.set(asset.model_name if asset.model_name else "")
+            status_combo.set(asset.status if asset.status else "")
+            desc_entry.insert(0, asset.description)
 
         def save():
             selected_model = model_combo.get()
             selected_status = status_combo.get()
-
-            print('selected_model-----------: ', selected_model)
-            print('selected_status-----------: ', selected_status)
 
             if not selected_model:
                 messagebox.showwarning("Warning", "Select a model")
@@ -173,29 +165,25 @@ class AssetsView:
 
             model_id = model_map[selected_model]
 
-            print('model_id-----------: ', model_id)
-
-            conn = sqlite3.connect("assets.db")
-            cur = conn.cursor()
-
             if asset:
-                cur.execute("UPDATE assets SET name=? WHERE id=?",
-                            (name_entry.get(), asset[0]))
+                asset_service.update(
+                    asset_id=asset.id,
+                    name=name_entry.get(),
+                    serialNumber=serial_entry.get(),
+                    tag=tag_entry.get(),
+                    status=selected_status,
+                    model_id=model_id,
+                    description=desc_entry.get(),
+                )
             else:
-                cur.execute("""
-                    INSERT INTO assets (name, serialNumber, tag, status, model_id, description) 
-                    VALUES (?, ?, ?, ?, ?, ?)
-                """, (
-                    name_entry.get(),
-                    serial_entry.get(),
-                    tag_entry.get(),
-                    selected_status,
-                    model_id,
-                    desc_entry.get(),
-                ))
-
-            conn.commit()
-            conn.close()
+                asset_service.insert(
+                    name=name_entry.get(),
+                    serialNumber=serial_entry.get(),
+                    tag=tag_entry.get(),
+                    status=selected_status,
+                    model_id=model_id,
+                    description=desc_entry.get(),
+                )
 
             modal.destroy()
             self.load_assets()
@@ -204,16 +192,22 @@ class AssetsView:
 
     def on_double_click(self, event):
         selected = self.tree.focus()
+        selected_index = self.tree.index(selected)
         values = self.tree.item(selected, "values")
 
+        asset = self.assets[selected_index]
+
         if values:
-            self.open_form("Edit Asset", values)
+            self.open_form("Edit Asset", asset)
 
     # ---------------- DELETE ---------------- #
 
     def delete_asset(self):
         selected = self.tree.focus()
+        selected_index = self.tree.index(selected)
         values = self.tree.item(selected, "values")
+
+        asset = self.assets[selected_index]
 
         if not values:
             messagebox.showwarning("Warning", "Select a row")
@@ -223,12 +217,5 @@ class AssetsView:
         if not confirm:
             return
 
-        conn = sqlite3.connect("assets.db")
-        cur = conn.cursor()
-
-        cur.execute("DELETE FROM assets WHERE id=?", (values[0],))
-
-        conn.commit()
-        conn.close()
-
+        asset_service.delete(asset.id)
         self.load_assets()

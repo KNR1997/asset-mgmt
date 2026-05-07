@@ -1,10 +1,12 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from services import category_service as service
-
+from models.category import Category
+from typing import Optional
 
 class CategoriesView:
     def __init__(self, parent):
+        self.categories = []
         self.frame = tk.Frame(parent)
         self.frame.pack(fill="both", expand=True)
 
@@ -58,8 +60,17 @@ class CategoriesView:
 
         rows = service.get_all(keyword)
 
-        for row in rows:
-            self.tree.insert("", tk.END, values=row)
+        for category in rows:
+            self.tree.insert(
+                "", 
+                tk.END, 
+                values=(
+                    category.id,
+                    category.name,
+                )
+            )
+
+        self.categories = rows
 
     # ---------------- SEARCH ---------------- #
 
@@ -72,7 +83,7 @@ class CategoriesView:
     def open_add_modal(self):
         self.open_form("Add Category")
 
-    def open_form(self, title, asset=None):
+    def open_form(self, title, category: Optional[Category] = None):
         modal = tk.Toplevel()
         modal.title(title)
         modal.geometry("300x150")
@@ -85,8 +96,8 @@ class CategoriesView:
         name_entry = tk.Entry(modal)
         name_entry.pack()
 
-        if asset:
-            name_entry.insert(0, asset[1])
+        if category:
+            name_entry.insert(0, category.name)
 
         def save():
             name = name_entry.get()
@@ -95,8 +106,11 @@ class CategoriesView:
                 messagebox.showwarning("Warning", "Enter name")
                 return
 
-            if asset:
-                service.update(asset[0], name)
+            if category:
+                service.update(
+                    cat_id=category.id, 
+                    name=name,
+                )
             else:
                 service.insert(name)
 
@@ -107,10 +121,13 @@ class CategoriesView:
 
     def on_double_click(self, event):
         selected = self.tree.focus()
+        selected_index = self.tree.index(selected)
         values = self.tree.item(selected, "values")
 
+        category = self.categories[selected_index]
+
         if values:
-            self.open_form("Edit Category", values)
+            self.open_form("Edit Category", category)
 
     # ---------------- DELETE ---------------- #
 

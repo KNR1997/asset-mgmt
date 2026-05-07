@@ -1,21 +1,34 @@
 import sqlite3
+from models.category import Category
 
 DB_NAME = "assets.db"
 
 
-def get_all(keyword=""):
+def get_all(keyword="") -> list[Category]:
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
     if keyword:
-        cur.execute("SELECT * FROM categories WHERE name LIKE ?",
+        cur.execute("SELECT id, name, description FROM categories WHERE name LIKE ?",
                     ('%' + keyword + '%',))
     else:
-        cur.execute("SELECT * FROM categories")
+        cur.execute("SELECT id, name, description FROM categories")
 
-    data = cur.fetchall()
+    rows = cur.fetchall()
     conn.close()
-    return data
+
+    assets = []
+
+    for row in rows:
+        assets.append(
+            Category(
+                id=row[0],
+                name=row[1],
+                description=row[2]
+            )
+        )
+
+    return assets
 
 
 def insert(name):

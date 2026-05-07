@@ -1,116 +1,160 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-import sqlite3
+from services import employee_service as employee_service
+from models.employee import Employee
+from typing import Optional
+
 
 class EmployeesView:
     def __init__(self, parent):
+        self.employees = []
         self.frame = tk.Frame(parent)
         self.frame.pack(fill="both", expand=True)
 
-        tk.Label(self.frame, text="Employees", font=("Arial", 16)).pack(pady=10)
+        tk.Label(self.frame, text="Employees",
+                 font=("Arial", 16)).pack(pady=10)
 
-        # Form
-        form = tk.Frame(self.frame)
-        form.pack()
+        # Top section (buttons + search)
+        top = tk.Frame(self.frame)
+        top.pack(fill="x", padx=10)
 
-        tk.Label(form, text="Name").grid(row=0, column=0)
-        self.name = tk.Entry(form)
-        self.name.grid(row=0, column=1)
+        tk.Button(top, text="Add Employee Model", command=self.open_add_modal)\
+            .pack(side="left", padx=5)
 
-        # Buttons
-        tk.Button(form, text="Add", command=self.add_employee).grid(row=0, column=2, padx=5)
-        tk.Button(form, text="Update", command=self.update_employee).grid(row=0, column=3, padx=5)
-        tk.Button(form, text="Delete", command=self.delete_employee).grid(row=0, column=4, padx=5)
+        tk.Button(top, text="Delete Selected", command=self.delete_model)\
+            .pack(side="left", padx=5)
+
+        # Search field (right aligned)
+        tk.Label(top, text="Search:").pack(side="right", padx=5)
+
+        self.search_var = tk.StringVar()
+        self.search_var.trace("w", self.on_search)
+
+        search_entry = tk.Entry(top, textvariable=self.search_var)
+        search_entry.pack(side="right", padx=5)
 
         # Table
-        self.tree = ttk.Treeview(self.frame, columns=("ID", "Name", "Department"), show="headings")
+        self.tree = ttk.Treeview(
+            self.frame,
+            columns=("ID", "Name", "Department"),
+            show="headings"
+        )
+
         self.tree.heading("ID", text="ID")
         self.tree.heading("Name", text="Name")
         self.tree.heading("Department", text="Department")
 
-        self.tree.pack(fill="both", expand=True, pady=10)
+        self.tree.column("ID", width=50)
 
-        self.tree.bind("<<TreeviewSelect>>", self.on_select)
+        self.tree.pack(fill="both", expand=True)
 
-        self.selected_id = None
+        # Double click to edit
+        self.tree.bind("<Double-1>", self.on_double_click)
 
         self.load_employees()
 
-    def add_employee(self):
-        if not self.name.get():
-            messagebox.showwarning("Warning", "Enter name")
-            return
+    # ---------------- LOAD ---------------- #
 
-        conn = sqlite3.connect("assets.db")
-        cur = conn.cursor()
-
-        cur.execute("INSERT INTO employees (name, department) VALUES (?, ?)",
-                    (self.name.get(), "IT"))
-
-        conn.commit()
-        conn.close()
-
-        self.clear_form()
-        self.load_employees()
-
-    def on_select(self, event):
-        selected = self.tree.focus()
-        values = self.tree.item(selected, "values")
-
-        if values:
-            self.selected_id = values[0]
-            self.name.delete(0, tk.END)
-            self.name.insert(0, values[1])
-
-    def update_employee(self):
-        if not self.selected_id:
-            messagebox.showwarning("Warning", "Select a row first")
-            return
-
-        conn = sqlite3.connect("assets.db")
-        cur = conn.cursor()
-
-        cur.execute("UPDATE employees SET name=? WHERE id=?",
-                    (self.name.get(), self.selected_id))
-
-        conn.commit()
-        conn.close()
-
-        self.clear_form()
-        self.load_employees()
-
-    def delete_employee(self):
-        if not self.selected_id:
-            messagebox.showwarning("Warning", "Select a row first")
-            return
-
-        confirm = messagebox.askyesno("Confirm", "Delete this employee?")
-        if not confirm:
-            return
-
-        conn = sqlite3.connect("assets.db")
-        cur = conn.cursor()
-
-        cur.execute("DELETE FROM employees WHERE id=?", (self.selected_id,))
-
-        conn.commit()
-        conn.close()
-
-        self.clear_form()
-        self.load_employees()
-
-    def load_employees(self):
+    def load_employees(self, keyword=""):
         for row in self.tree.get_children():
             self.tree.delete(row)
 
-        conn = sqlite3.connect("assets.db")
-        cur = conn.cursor()
+        rows = employee_service.get_all(keyword)
 
-        for row in cur.execute("SELECT * FROM employees"):
-            self.tree.insert("", tk.END, values=row)
+        for model in rows:
+            self.tree.insert(
+                "",
+                tk.END,
+                values=(
+                    model.id,
+                    model.name,
+                    model.department,
+                )
+            )
 
-        conn.close()
+        self.employees = rows
 
-    def clear_form(self):
-        self.name.delete(0, tk.END)
-        self.selected_id = None
+    # ---------------- SEARCH ---------------- #
+
+    def on_search(self, *args):
+        keyword = self.search_var.get()
+        self.load_employees(keyword)
+
+    # ---------------- ADD / EDIT ---------------- #
+
+    def open_add_modal(self):
+        self.open_form("Add Category")
+
+    def open_form(self, title, model: Optional[Employee] = None):
+        modal = tk.Toplevel()
+        modal.title(title)
+        modal.geometry("350x300")
+
+        modal.transient(self.frame)
+        modal.update_idletasks()
+        modal.grab_set()
+
+        # ---------------- FORM ---------------- #
+        tk.Label(modal, text="Model Name").pack()
+        name_entry = tk.Entry(modal)
+        name_entry.pack()
+
+        tk.Label(modal, text="Department Name").pack()
+        department_entry = tk.Entry(modal)
+        department_entry.pack()
+
+        # ---------------- PREFILL (EDIT) ---------------- #
+
+        if model:
+            name_entry.insert(0, model.name)
+            department_entry.insert(0, model.department)
+
+        # ---------------- SAVE ---------------- #
+
+        def save():
+            name = name_entry.get()
+            department = department_entry.get()
+
+            if model:
+                employee_service.update(
+                    employee_id=model.id,
+                    name=name,
+                    department=department,
+                )
+            else:
+                employee_service.insert(
+                    name=name,
+                    department=department,
+                )
+
+            modal.destroy()
+            self.load_employees()
+
+        tk.Button(modal, text="Save", command=save).pack(pady=10)
+
+    def on_double_click(self, event):
+        selected = self.tree.focus()
+        selected_index = self.tree.index(selected)
+        values = self.tree.item(selected, "values")
+
+        model = self.employees[selected_index]
+
+        if values:
+            self.open_form("Edit Employee", model)
+
+    # ---------------- DELETE ---------------- #
+
+    def delete_model(self):
+        selected = self.tree.focus()
+        values = self.tree.item(selected, "values")
+
+        if not values:
+            messagebox.showwarning("Warning", "Select a row")
+            return
+
+        confirm = messagebox.askyesno("Confirm", "Delete this model?")
+        if not confirm:
+            return
+
+        employee_service.delete(values[0])
+        self.load_employees()

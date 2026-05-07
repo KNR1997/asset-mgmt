@@ -56,5 +56,5 @@ class Dashboard:
 
     def show_asset_models(self):
         self.clear_content()
-        from views.asset_models import AssetModelsView
+        from views.models import AssetModelsView
         AssetModelsView(self.content)
