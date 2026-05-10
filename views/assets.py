@@ -2,8 +2,11 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from services import asset_service as asset_service
 from services import model_service as model_service
+from services import employee_service as employee_service
+from services import checkout_service as checkout_service
 from models.asset import Asset
 from typing import Optional
+from enums.asset_status import AssetStatus
 
 
 class AssetsView:
@@ -19,6 +22,12 @@ class AssetsView:
         top.pack(fill="x", padx=10)
 
         tk.Button(top, text="Add Asset", command=self.open_add_modal)\
+            .pack(side="left", padx=5)
+
+        tk.Button(top, text="Checkout Asset", command=self.open_checkout_modal)\
+            .pack(side="left", padx=5)
+
+        tk.Button(top, text="Checkin Asset", command=self.open_checkin_modal)\
             .pack(side="left", padx=5)
 
         tk.Button(top, text="Delete Selected", command=self.delete_asset)\
@@ -75,11 +84,22 @@ class AssetsView:
                     asset.serial_number,
                     asset.model_name,
                     asset.category_name,
-                    asset.status
+                    self.get_status_display(asset.status)
                 )
             )
 
         self.assets = rows
+
+    def get_status_display(self, status):
+        status_map = {
+            "Ready to Deploy": "🟢 Ready to Deploy",
+            "Deployed": "🔵 Deployed",
+            "Broken": "🔴 Broken",
+            "Archived": "⚫ Archived",
+            "Checked Out": "🔵 Checked Out",
+        }
+
+        return status_map.get(status, status)
 
     # ---------------- SEARCH ---------------- #
 
@@ -189,6 +209,195 @@ class AssetsView:
             self.load_assets()
 
         tk.Button(modal, text="Save", command=save).pack(pady=10)
+
+    def open_checkout_modal(self):
+        selected = self.tree.focus()
+        selected_index = self.tree.index(selected)
+        values = self.tree.item(selected, "values")
+
+        asset = self.assets[selected_index]
+
+        if not values:
+            messagebox.showwarning("Warning", "Select an Asset")
+            return
+
+        # if asset.status != AssetStatus.READY_TO_DEPLOY:
+        #     messagebox.showwarning("Warning", "Asset is not ready to deploy")
+        #     return
+
+        self.open_checkout_form("Checkout Asset", asset)
+
+    def open_checkout_form(self, title, asset: Asset):
+        modal = tk.Toplevel()
+        modal.title(title)
+        modal.geometry("350x400")
+
+        modal.transient(self.frame)
+        modal.update_idletasks()
+        modal.grab_set()
+
+        # Load employees
+        employees = employee_service.get_all()
+        employee_map = {employee.name: employee.id for employee in employees}
+
+        print('employee_map-----------: ', employee_map)
+        print('asset-----------: ', asset)
+
+        checkout_status_map = {
+            "Ready to Deploy",
+        }
+
+        info_frame = tk.Frame(modal)
+        info_frame.pack(pady=10, fill="x")
+
+        tk.Label(info_frame, text="Category:", font=("Arial", 10, "bold"))\
+            .grid(row=0, column=0, sticky="w", padx=10)
+
+        tk.Label(info_frame, text=asset.category_name or "-")\
+            .grid(row=0, column=1, sticky="w")
+
+        tk.Label(info_frame, text="Model:", font=("Arial", 10, "bold"))\
+            .grid(row=1, column=0, sticky="w", padx=10)
+
+        tk.Label(info_frame, text=asset.model_name or "-")\
+            .grid(row=1, column=1, sticky="w")
+
+        tk.Label(modal, text="Asset Name").pack(pady=5)
+        name_entry = tk.Entry(modal)
+        name_entry.pack()
+
+        tk.Label(modal, text="Employee").pack()
+        employee_combo = ttk.Combobox(
+            modal,
+            values=list(employee_map.keys()),
+            state="readonly"
+        )
+        employee_combo.pack()
+
+        tk.Label(modal, text="Expected Check-in Date").pack(pady=5)
+        expected_checkin_entry = tk.Entry(modal)
+        expected_checkin_entry.pack()
+
+        expected_checkin_entry.insert(0, "2026-05-20")
+
+        tk.Label(modal, text="Checkout Notes").pack(pady=5)
+        notes_text = tk.Text(modal, height=4, width=30)
+        notes_text.pack()
+
+        # tk.Label(modal, text="Status").pack()
+        # status_combo = ttk.Combobox(
+        #     modal,
+        #     values=list(checkout_status_map),
+        #     state="readonly"
+        # )
+        # status_combo.pack()
+
+        def save():
+            selected_employee = employee_combo.get()
+
+            employee_id = employee_map[selected_employee]
+            expected_checkin_date = expected_checkin_entry.get()
+            checkout_notes = notes_text.get("1.0", tk.END).strip()
+
+            try:
+                checkout_service.checkout_asset(
+                    asset_id=asset.id,
+                    employee_id=employee_id,
+                    expected_checkin_date=expected_checkin_date,
+                    checkout_notes=checkout_notes,
+                )
+            except Exception as e:
+                messagebox.showerror("Error", str(e))
+
+            modal.destroy()
+            self.load_assets()
+
+        tk.Button(modal, text="Checkout", command=save).pack(pady=10)
+
+    def open_checkin_modal(self):
+        selected = self.tree.focus()
+        selected_index = self.tree.index(selected)
+        values = self.tree.item(selected, "values")
+
+        asset = self.assets[selected_index]
+
+        if not values:
+            messagebox.showwarning("Warning", "Select an Asset")
+            return
+
+        # if asset.status != AssetStatus.CHECKED_OUT:
+        #     messagebox.showwarning("Warning", "Asset is not checked out")
+        #     return
+
+        self.open_checkin_form("Checkin Asset", asset)
+
+    def open_checkin_form(self, title, asset: Asset):
+        modal = tk.Toplevel()
+        modal.title(title)
+        modal.geometry("350x400")
+
+        modal.transient(self.frame)
+        modal.update_idletasks()
+        modal.grab_set()
+
+        checkin_status_list = [
+            AssetStatus.PENDING.value,
+            AssetStatus.READY_TO_DEPLOY.value,
+            AssetStatus.ARCHIVED.value,
+            AssetStatus.BROKEN.value,
+            AssetStatus.LOST_STOLEN.value,
+            AssetStatus.OUT_FOR_DIAGNOSTICS.value,
+        ]
+
+        info_frame = tk.Frame(modal)
+        info_frame.pack(pady=10, fill="x")
+
+        tk.Label(info_frame, text="Category:", font=("Arial", 10, "bold"))\
+            .grid(row=0, column=0, sticky="w", padx=10)
+
+        tk.Label(info_frame, text=asset.category_name or "-")\
+            .grid(row=0, column=1, sticky="w")
+
+        tk.Label(info_frame, text="Model:", font=("Arial", 10, "bold"))\
+            .grid(row=1, column=0, sticky="w", padx=10)
+
+        tk.Label(info_frame, text=asset.model_name or "-")\
+            .grid(row=1, column=1, sticky="w")
+
+        tk.Label(modal, text="Status").pack()
+        status_combo = ttk.Combobox(
+            modal,
+            values=checkin_status_list,
+            state="readonly"
+        )
+        status_combo.pack()
+
+        tk.Label(modal, text="Return Notes").pack(pady=5)
+        notes_text = tk.Text(modal, height=4, width=30)
+        notes_text.pack()
+
+        def save():
+            selected_status = status_combo.get()
+
+            if not selected_status:
+                messagebox.showwarning("Warning", "Select status")
+                return
+
+            return_notes = notes_text.get("1.0", tk.END).strip()
+
+            try:
+                checkout_service.checkin_asset(
+                    asset_id=asset.id,
+                    status=selected_status,
+                    return_notes=return_notes,
+                )
+            except Exception as e:
+                messagebox.showerror("Error", str(e))
+
+            modal.destroy()
+            self.load_assets()
+
+        tk.Button(modal, text="Checkin", command=save).pack(pady=10)
 
     def on_double_click(self, event):
         selected = self.tree.focus()
