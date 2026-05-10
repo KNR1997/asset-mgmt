@@ -26,6 +26,9 @@ class Dashboard:
         tk.Button(self.sidebar, text="Employees", fg="white", bg="#34495e",
                   command=self.show_employees, height=2).pack(fill="x", pady=5)
 
+        tk.Button(self.sidebar, text="Manufacturers", fg="white", bg="#34495e",
+                  command=self.show_manufacturers, height=2).pack(fill="x", pady=5)
+
         tk.Button(self.sidebar, text="Categories", fg="white", bg="#34495e",
                   command=self.show_categories, height=2).pack(fill="x", pady=5)
 
@@ -48,6 +51,11 @@ class Dashboard:
         self.clear_content()
         from views.employees import EmployeesView
         EmployeesView(self.content)
+
+    def show_manufacturers(self):
+        self.clear_content()
+        from views.manufacturers import ManufacturersView
+        ManufacturersView(self.content)
 
     def show_categories(self):
         self.clear_content()

@@ -29,6 +29,20 @@ def setup():
     )
     """)
 
+    # Manufacturers
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS manufacturers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        url TEXT,
+        supportURL TEXT,
+        supportPhone TEXT,
+        warrantyLookupUrl TEXT,
+        supportEmail TEXT,
+        notes TEXT
+    )
+    """)
+
     # Categories
     cur.execute("""
     CREATE TABLE IF NOT EXISTS categories (
