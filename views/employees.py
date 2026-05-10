@@ -83,7 +83,7 @@ class EmployeesView:
     # ---------------- ADD / EDIT ---------------- #
 
     def open_add_modal(self):
-        self.open_form("Add Category")
+        self.open_form("Add Employee")
 
     def open_form(self, title, model: Optional[Employee] = None):
         modal = tk.Toplevel()
@@ -95,7 +95,7 @@ class EmployeesView:
         modal.grab_set()
 
         # ---------------- FORM ---------------- #
-        tk.Label(modal, text="Model Name").pack()
+        tk.Label(modal, text="Employee Name").pack()
         name_entry = tk.Entry(modal)
         name_entry.pack()
 
