@@ -10,12 +10,31 @@ def get_all(keyword="") -> list[Manufacturer]:
 
     if keyword:
         cur.execute("""
-            SELECT id, name, url, supportURL, supportPhone, warrantyLookupUrl, supportEmail, notes
-            FROM manufacturers WHERE name LIKE ?
+            SELECT
+                id, 
+                name, 
+                url,
+                supportURL,
+                supportPhone,
+                warrantyLookupUrl,
+                supportEmail,
+                notes
+            FROM manufacturers
+            WHERE name LIKE ?
         """, ('%' + keyword + '%',))
     else:
-        cur.execute(
-            "SELECT id, name, url, supportURL, supportPhone, warrantyLookupUrl, supportEmail, notes FROM manufacturers")
+        cur.execute("""
+            SELECT
+                id, 
+                name, 
+                url,
+                supportURL,
+                supportPhone,
+                warrantyLookupUrl,
+                supportEmail,
+                notes
+            FROM manufacturers
+        """)
 
     rows = cur.fetchall()
     conn.close()
@@ -52,7 +71,15 @@ def insert(
     cur = conn.cursor()
 
     cur.execute("""
-        INSERT INTO manufacturers (name, url, supportURL, supportPhone, warrantyLookupUrl, supportEmail, notes) 
+        INSERT INTO manufacturers (
+            name, 
+            url, 
+            supportURL, 
+            supportPhone, 
+            warrantyLookupUrl, 
+            supportEmail, 
+            notes
+        ) 
         VALUES (?, ?, ?, ?, ?, ?, ?)
     """, (
         name,

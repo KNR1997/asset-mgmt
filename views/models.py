@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from services import model_service as model_service
 from services import category_service as category_service
+from services import manufacturer_service as manufacturer_service
 from models.model import Model
 from typing import Optional
 
@@ -52,11 +53,11 @@ class AssetModelsView:
         # Double click to edit
         self.tree.bind("<Double-1>", self.on_double_click)
 
-        self.load_asset_models()
+        self.load_models()
 
     # ---------------- LOAD ---------------- #
 
-    def load_asset_models(self, keyword=""):
+    def load_models(self, keyword=""):
         for row in self.tree.get_children():
             self.tree.delete(row)
 
@@ -80,7 +81,7 @@ class AssetModelsView:
 
     def on_search(self, *args):
         keyword = self.search_var.get()
-        self.load_asset_models(keyword)
+        self.load_models(keyword)
 
     # ---------------- ADD / EDIT ---------------- #
 
@@ -99,6 +100,10 @@ class AssetModelsView:
         # ---------------- LOAD CATEGORIES ---------------- #
         categories =  category_service.get_all()
         category_map = {c.name: c.id for c in categories}
+
+        # ---------------- LOAD MANUFACTURERS ---------------- #
+        manufacturers =  manufacturer_service.get_all()
+        manufacturer_map = {m.name: m.id for m in manufacturers}
 
         # ---------------- FORM ---------------- #
         tk.Label(modal, text="Model Name").pack()
@@ -121,25 +126,38 @@ class AssetModelsView:
         )
         category_combo.pack()
 
+        tk.Label(modal, text="Manufacturer").pack()
+        manufacturer_combo = ttk.Combobox(
+            modal,
+            values=list(manufacturer_map.keys()),
+            state="readonly"
+        )
+        manufacturer_combo.pack()
+
         # ---------------- PREFILL (EDIT) ---------------- #
 
         if model:
             name_entry.insert(0, model.name)
             model_number_entry.insert(0, model.modelNumber)
+            desc_entry.insert(0, model.description)
 
             # set category name
             category_combo.set(model.category_name if model.category_name else "")
 
+            # set manufacturer name
+            manufacturer_combo.set(model.manufacturer_name if model.manufacturer_name else "")
         # ---------------- SAVE ---------------- #
 
         def save():
             selected_category = category_combo.get()
+            selected_manufacturer = manufacturer_combo.get()
 
             if not selected_category:
                 messagebox.showwarning("Warning", "Select a category")
                 return
 
             category_id = category_map[selected_category]
+            manufacturer_id = manufacturer_map[selected_manufacturer]
 
             name = name_entry.get()
             model_number = model_number_entry.get()
@@ -152,6 +170,7 @@ class AssetModelsView:
                     modelNumber=model_number,
                     description=description,
                     category_id=category_id,
+                    manufacturer_id=manufacturer_id,
                 )
             else:
                 model_service.insert(
@@ -159,10 +178,11 @@ class AssetModelsView:
                     modelNumber=model_number,
                     description=description,
                     category_id=category_id,
+                    manufacturer_id=manufacturer_id,
                 )
 
             modal.destroy()
-            self.load_asset_models()
+            self.load_models()
 
         tk.Button(modal, text="Save", command=save).pack(pady=10)
 
@@ -191,4 +211,4 @@ class AssetModelsView:
             return
 
         model_service.delete(values[0])
-        self.load_asset_models()
+        self.load_models()

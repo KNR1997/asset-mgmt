@@ -9,10 +9,22 @@ def get_all(keyword="") -> list[Employee]:
     cur = conn.cursor()
 
     if keyword:
-        cur.execute("SELECT id, name, department FROM employees WHERE name LIKE ?",
-                    ('%' + keyword + '%',))
+        cur.execute("""
+            SELECT
+                id, 
+                name, 
+                department
+            FROM employees
+            WHERE name LIKE ?
+        """, ('%' + keyword + '%',))
     else:
-        cur.execute("SELECT id, name, department FROM employees")
+        cur.execute("""
+            SELECT
+                id, 
+                name, 
+                department
+            FROM employees
+        """)
 
     rows = cur.fetchall()
     conn.close()
@@ -31,23 +43,46 @@ def get_all(keyword="") -> list[Employee]:
     return employees
 
 
-def insert(name, department):
+def insert(
+    name, 
+    department
+):
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
-    cur.execute(
-        "INSERT INTO employees (name, department) VALUES (?, ?)", (name, department))
+    cur.execute("""
+        INSERT INTO employees (
+            name, 
+            department
+        )
+        VALUES (?, ?)
+    """, (
+        name,
+        department
+    ))
 
     conn.commit()
     conn.close()
 
 
-def update(employee_id, name, department):
+def update(
+    employee_id, 
+    name, 
+    department
+):
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
-    cur.execute("UPDATE employees SET name=?, department=? WHERE id=?",
-                (name, department, employee_id))
+    cur.execute("""
+        UPDATE employees SET
+            name=?,
+            department=?
+        WHERE id=?
+        """, (
+            name, 
+            department,
+            employee_id
+        ))
 
     conn.commit()
     conn.close()

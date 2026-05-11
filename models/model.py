@@ -10,3 +10,5 @@ class Model:
     description: str
     category_id: Optional[int]
     category_name: Optional[str]
+    manufacturer_id: Optional[int]
+    manufacturer_name: Optional[str]

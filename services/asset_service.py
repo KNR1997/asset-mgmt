@@ -10,7 +10,15 @@ def get_all(keyword="") -> list[Asset]:
 
     if keyword:
         cur.execute("""
-            SELECT assets.id, assets.tag, assets.name, assets.serialNumber, models.name, categories.name, assets.status, assets.description 
+            SELECT 
+                assets.id, 
+                assets.tag, 
+                assets.name, 
+                assets.serialNumber, 
+                models.name, 
+                categories.name, 
+                assets.status, 
+                assets.description 
             FROM assets
             LEFT JOIN models ON assets.model_id = models.id
             LEFT JOIN categories ON models.category_id = categories.id
@@ -18,7 +26,15 @@ def get_all(keyword="") -> list[Asset]:
         """, ('%' + keyword + '%',))
     else:
         cur.execute("""
-            SELECT assets.id, assets.tag, assets.name, assets.serialNumber, models.name, categories.name, assets.status, assets.description 
+            SELECT 
+                assets.id, 
+                assets.tag, 
+                assets.name, 
+                assets.serialNumber, 
+                models.name, 
+                categories.name, 
+                assets.status, 
+                assets.description 
             FROM assets
             LEFT JOIN models ON assets.model_id = models.id
             LEFT JOIN categories ON models.category_id = categories.id
@@ -46,12 +62,26 @@ def get_all(keyword="") -> list[Asset]:
     return assets
 
 
-def insert(name, serialNumber, tag, status, model_id, description):
+def insert(
+    name, 
+    serialNumber, 
+    tag, 
+    status, 
+    model_id, 
+    description
+):
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
     cur.execute("""
-        INSERT INTO assets (name, serialNumber, tag, status, model_id, description) 
+        INSERT INTO assets (
+            name, 
+            serialNumber, 
+            tag, 
+            status, 
+            model_id, 
+            description
+        ) 
         VALUES (?, ?, ?, ?, ?, ?)
     """, (
         name,
@@ -66,12 +96,37 @@ def insert(name, serialNumber, tag, status, model_id, description):
     conn.close()
 
 
-def update(asset_id, name, serialNumber, tag, status, model_id, description):
+def update(
+    asset_id, 
+    name, 
+    serialNumber, 
+    tag, 
+    status, 
+    model_id, 
+    description
+):
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
-    cur.execute("UPDATE assets SET name=?, serialNumber=?, tag=?, status=?, model_id=?, description=? WHERE id=?", 
-                (name, serialNumber, tag, status, model_id, description, asset_id))
+    cur.execute("""
+        UPDATE models SET 
+            name=?, 
+            serialNumber=?, 
+            tag=?, 
+            status=?, 
+            model_id=?,
+            description=?,
+            asset_id=? 
+        WHERE id=?
+        """, (
+            name, 
+            serialNumber, 
+            tag, 
+            status, 
+            model_id, 
+            description,
+            asset_id
+        ))
 
     conn.commit()
     conn.close()

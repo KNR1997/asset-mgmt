@@ -53,7 +53,11 @@ def checkout_asset(
     conn.close()
 
 
-def checkin_asset(asset_id, status, return_notes):
+def checkin_asset(
+    asset_id, 
+    status, 
+    return_notes
+):
     conn = sqlite3.connect(DB_NAME)
 
     try:
@@ -61,7 +65,8 @@ def checkin_asset(asset_id, status, return_notes):
 
         # Find active checkout
         cur.execute("""
-            SELECT id
+            SELECT 
+                id
             FROM checkouts
             WHERE asset_id=? AND is_active=1
         """, (asset_id,))

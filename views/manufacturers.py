@@ -4,13 +4,14 @@ from services import manufacturer_service as service
 from models.manufacturer import Manufacturer
 from typing import Optional
 
+
 class ManufacturersView:
     def __init__(self, parent):
         self.categories = []
         self.frame = tk.Frame(parent)
         self.frame.pack(fill="both", expand=True)
 
-        tk.Label(self.frame, text="Categories",
+        tk.Label(self.frame, text="Manufacturers",
                  font=("Arial", 16)).pack(pady=10)
 
         # Top section (buttons + search)
@@ -63,8 +64,8 @@ class ManufacturersView:
 
         for manufacturer in rows:
             self.tree.insert(
-                "", 
-                tk.END, 
+                "",
+                tk.END,
                 values=(
                     manufacturer.id,
                     manufacturer.name,
@@ -143,7 +144,7 @@ class ManufacturersView:
 
             if manufacturer:
                 service.update(
-                    manufacturer_id=manufacturer.id, 
+                    manufacturer_id=manufacturer.id,
                     name=name,
                     url=url,
                     supportURL=supportURL,

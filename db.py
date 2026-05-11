@@ -60,7 +60,9 @@ def setup():
         modelNumber TEXT,
         description TEXT,
         category_id INTEGER,
-        FOREIGN KEY (category_id) REFERENCES categories(id)
+        manufacturer_id INTEGER,
+        FOREIGN KEY (category_id) REFERENCES categories(id),
+        FOREIGN KEY (manufacturer_id) REFERENCES manufacturers(id)
     )
     """)
 
