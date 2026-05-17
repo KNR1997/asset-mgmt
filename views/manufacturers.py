@@ -8,53 +8,195 @@ from typing import Optional
 class ManufacturersView:
     def __init__(self, parent):
         self.categories = []
-        self.frame = tk.Frame(parent)
+        self.frame = tk.Frame(parent, bg="#f5f6fa")
         self.frame.pack(fill="both", expand=True)
 
-        tk.Label(self.frame, text="Manufacturers",
-                 font=("Arial", 16)).pack(pady=10)
+        # Header with icon
+        header_frame = tk.Frame(self.frame, bg="#f5f6fa")
+        header_frame.pack(fill="x", pady=(20, 10))
+
+        tk.Label(
+            header_frame,
+            text="🏭 Manufacturers",
+            font=("Segoe UI", 20, "bold"),
+            fg="#2c3e50",
+            bg="#f5f6fa"
+        ).pack(side="left", padx=20)
+
+        # Separator line
+        separator = tk.Frame(self.frame, bg="#dcdde1", height=2)
+        separator.pack(fill="x", padx=20, pady=(0, 20))
 
         # Top section (buttons + search)
-        top = tk.Frame(self.frame)
-        top.pack(fill="x", padx=10)
+        top = tk.Frame(self.frame, bg="#f5f6fa")
+        top.pack(fill="x", padx=20, pady=(0, 15))
 
-        tk.Button(top, text="Add Manufacturer", command=self.open_add_modal)\
-            .pack(side="left", padx=5)
+        # Button frame (left side)
+        btn_frame = tk.Frame(top, bg="#f5f6fa")
+        btn_frame.pack(side="left")
 
-        tk.Button(top, text="Delete Selected", command=self.delete_manufacturer)\
-            .pack(side="left", padx=5)
+        # Add Category button with icon
+        self.add_btn = tk.Button(
+            btn_frame,
+            text="➕ Add New",
+            command=self.open_add_modal,
+            bg="#3498db",
+            fg="white",
+            font=("Segoe UI", 10, "bold"),
+            padx=15,
+            pady=8,
+            relief="flat",
+            cursor="hand2"
+        )
+        self.add_btn.pack(side="left", padx=(0, 10))
 
-        # Search field (right aligned)
-        tk.Label(top, text="Search:").pack(side="right", padx=5)
+        # Hover effect for Add button
+        self.add_btn.bind(
+            "<Enter>", lambda e: self.add_btn.config(bg="#2980b9"))
+        self.add_btn.bind(
+            "<Leave>", lambda e: self.add_btn.config(bg="#3498db"))
+
+        # Delete button with icon
+        self.delete_btn = tk.Button(
+            btn_frame,
+            text="🗑️ Delete Selected",
+            command=self.delete_manufacturer,
+            bg="#e74c3c",
+            fg="white",
+            font=("Segoe UI", 10, "bold"),
+            padx=15,
+            pady=8,
+            relief="flat",
+            cursor="hand2"
+        )
+        self.delete_btn.pack(side="left")
+
+        # Hover effect for Delete button
+        self.delete_btn.bind(
+            "<Enter>", lambda e: self.delete_btn.config(bg="#c0392b"))
+        self.delete_btn.bind(
+            "<Leave>", lambda e: self.delete_btn.config(bg="#e74c3c"))
+
+        # Search frame (right side)
+        search_frame = tk.Frame(top, bg="#f5f6fa")
+        search_frame.pack(side="right")
+
+        # Search icon/label
+        tk.Label(
+            search_frame,
+            text="🔍",
+            font=("Segoe UI", 12),
+            bg="#f5f6fa",
+            fg="#7f8c8d"
+        ).pack(side="left", padx=(0, 5))
 
         self.search_var = tk.StringVar()
         self.search_var.trace("w", self.on_search)
 
-        search_entry = tk.Entry(top, textvariable=self.search_var)
-        search_entry.pack(side="right", padx=5)
+        search_entry = tk.Entry(
+            search_frame,
+            textvariable=self.search_var,
+            font=("Segoe UI", 10),
+            bg="white",
+            fg="#2c3e50",
+            relief="solid",
+            borderwidth=1,
+            width=25
+        )
+        search_entry.pack(side="left", padx=5, pady=5)
 
-        # Table
+        # Clear search button (appears when there's text)
+        self.clear_btn = tk.Button(
+            search_frame,
+            text="✖",
+            font=("Segoe UI", 9),
+            bg="#f5f6fa",
+            fg="#95a5a6",
+            relief="flat",
+            cursor="hand2",
+            command=self.clear_search,
+            padx=5
+        )
+
+        # Bind focus effects for search entry
+        search_entry.bind("<FocusIn>", lambda e: search_entry.config(
+            bg="#fff", highlightcolor="#3498db", highlightthickness=1))
+        search_entry.bind("<FocusOut>", lambda e: search_entry.config(
+            bg="white", highlightthickness=0))
+
+        # Table Frame with border
+        table_frame = tk.Frame(self.frame, bg="#dcdde1", padx=1, pady=1)
+        table_frame.pack(fill="both", expand=True, padx=20, pady=(0, 20))
+
+        # Table with improved styling
+        style = ttk.Style()
+        style.theme_use("clam")
+        style.configure(
+            "Treeview",
+            background="white",
+            foreground="#2c3e50",
+            rowheight=30,
+            fieldbackground="white",
+            font=("Segoe UI", 10)
+        )
+        style.configure(
+            "Treeview.Heading",
+            background="#34495e",
+            foreground="white",
+            relief="flat",
+            font=("Segoe UI", 10, "bold")
+        )
+        style.map("Treeview", background=[("selected", "#3498db")])
+
         self.tree = ttk.Treeview(
-            self.frame,
-            columns=("ID", "Name", "URL", "Support URL"),
-            show="headings"
+            table_frame,
+            columns=(
+                "ID",
+                "Name",
+                "URL",
+                "Support URL"
+            ),
+            show="headings",
+            height=15
         )
 
         self.tree.heading("ID", text="ID")
         self.tree.heading("Name", text="Name")
-        self.tree.heading("URL", text="URL")
-        self.tree.heading("Support URL", text="Support URL")
+        self.tree.heading("URL", text="Model No")
+        self.tree.heading("Support URL", text="Category")
 
-        self.tree.column("ID", width=50)
+        self.tree.column("ID", width=80, anchor="center")
+        self.tree.column("Name", width=300, anchor="center")
+        self.tree.column("URL", width=300, anchor="center")
+        self.tree.column("Support URL", width=300, anchor="center")
 
-        self.tree.pack(fill="both", expand=True)
+        # Add scrollbar
+        scrollbar = ttk.Scrollbar(
+            table_frame, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=scrollbar.set)
+
+        self.tree.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
 
         # Double click to edit
         self.tree.bind("<Double-1>", self.on_double_click)
 
-        self.load_manufacturers()
+        # Status label at bottom
+        self.status_label = tk.Label(
+            self.frame,
+            text="",
+            font=("Segoe UI", 9),
+            fg="#7f8c8d",
+            bg="#f5f6fa"
+        )
+        self.status_label.pack(
+            side="bottom",
+            anchor="w",
+            padx=20,
+            pady=(0, 10)
+        )
 
-    # ---------------- LOAD ---------------- #
+        self.load_manufacturers()
 
     def load_manufacturers(self, keyword=""):
         for row in self.tree.get_children():
@@ -76,13 +218,12 @@ class ManufacturersView:
 
         self.categories = rows
 
-    # ---------------- SEARCH ---------------- #
-
     def on_search(self, *args):
         keyword = self.search_var.get()
         self.load_manufacturers(keyword)
 
-    # ---------------- ADD / EDIT ---------------- #
+    def clear_search(self):
+        ...
 
     def open_add_modal(self):
         self.open_form("Add Manufacturer")
@@ -178,8 +319,6 @@ class ManufacturersView:
 
         if values:
             self.open_form("Edit Manufacturer", manufacturer)
-
-    # ---------------- DELETE ---------------- #
 
     def delete_manufacturer(self):
         selected = self.tree.focus()
