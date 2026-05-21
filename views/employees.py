@@ -151,7 +151,7 @@ class EmployeesView:
         self.tree = ttk.Treeview(
             table_frame,
             columns=(
-                "ID",
+                # "ID",
                 "Name",
                 "Department",
             ),
@@ -159,11 +159,11 @@ class EmployeesView:
             height=15
         )
 
-        self.tree.heading("ID", text="ID")
+        # self.tree.heading("ID", text="ID")
         self.tree.heading("Name", text="Name")
-        self.tree.heading("Department", text="Model No")
+        self.tree.heading("Department", text="Department")
 
-        self.tree.column("ID", width=80, anchor="center")
+        # self.tree.column("ID", width=80, anchor="center")
         self.tree.column("Name", width=300, anchor="center")
         self.tree.column("Department", width=300, anchor="center")
 
@@ -206,7 +206,7 @@ class EmployeesView:
                 "",
                 tk.END,
                 values=(
-                    model.id,
+                    # model.id,
                     model.name,
                     model.department,
                 )

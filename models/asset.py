@@ -12,3 +12,4 @@ class Asset:
     category_name: Optional[str]
     status: str
     description: str
+    current_checkout_employee_name: Optional[str]

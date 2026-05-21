@@ -11,19 +11,23 @@ def get_all(keyword="") -> list[Category]:
     if keyword:
         cur.execute("""
             SELECT
-                id, 
-                name, 
-                description
+                categories.id,
+                categories.name,
+                categories.description,
+                types.name
             FROM categories
+            LEFT JOIN types ON categories.type_id = types.id
             WHERE name LIKE ?
         """, ('%' + keyword + '%',))
     else:
         cur.execute("""
             SELECT
-                id, 
-                name, 
-                description
+                categories.id,
+                categories.name,
+                categories.description,
+                types.name
             FROM categories
+            LEFT JOIN types ON categories.type_id = types.id
         """)
 
     rows = cur.fetchall()
@@ -36,7 +40,8 @@ def get_all(keyword="") -> list[Category]:
             Category(
                 id=row[0],
                 name=row[1],
-                description=row[2]
+                description=row[2],
+                type_name=row[3]
             )
         )
 
@@ -44,7 +49,8 @@ def get_all(keyword="") -> list[Category]:
 
 
 def insert(
-    name, 
+    name,
+    type_id,
     description
 ):
     conn = sqlite3.connect(DB_NAME)
@@ -52,12 +58,14 @@ def insert(
 
     cur.execute("""
         INSERT INTO categories (
-            name, 
+            name,
+            type_id,
             description
         )
-        VALUES (?, ?)
+        VALUES (?, ?, ?)
     """, (
         name,
+        type_id,
         description
     ))
 

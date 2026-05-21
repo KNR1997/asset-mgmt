@@ -18,10 +18,13 @@ def get_all(keyword="") -> list[Asset]:
                 models.name, 
                 categories.name, 
                 assets.status, 
-                assets.description 
+                assets.description,
+                employees.name
             FROM assets
             LEFT JOIN models ON assets.model_id = models.id
             LEFT JOIN categories ON models.category_id = categories.id
+            LEFT JOIN checkouts ON assets.id = checkouts.asset_id AND checkouts.is_active = 1
+            LEFT JOIN employees ON employees.id = checkouts.employee_id
             WHERE assets.name LIKE ?
         """, ('%' + keyword + '%',))
     else:
@@ -34,10 +37,13 @@ def get_all(keyword="") -> list[Asset]:
                 models.name, 
                 categories.name, 
                 assets.status, 
-                assets.description 
+                assets.description,
+                employees.name
             FROM assets
             LEFT JOIN models ON assets.model_id = models.id
             LEFT JOIN categories ON models.category_id = categories.id
+            LEFT JOIN checkouts ON assets.id = checkouts.asset_id AND checkouts.is_active = 1
+            LEFT JOIN employees ON employees.id = checkouts.employee_id
         """)
 
     rows = cur.fetchall()
@@ -55,7 +61,8 @@ def get_all(keyword="") -> list[Asset]:
                 model_name=row[4],
                 category_name=row[5],
                 status=row[6],
-                description=row[7]
+                description=row[7],
+                current_checkout_employee_name=row[8]
             )
         )
 
@@ -109,14 +116,13 @@ def update(
     cur = conn.cursor()
 
     cur.execute("""
-        UPDATE models SET 
+        UPDATE assets SET 
             name=?, 
             serialNumber=?, 
             tag=?, 
             status=?, 
             model_id=?,
-            description=?,
-            asset_id=? 
+            description=?
         WHERE id=?
         """, (
             name, 
@@ -140,3 +146,17 @@ def delete(cat_id):
 
     conn.commit()
     conn.close()
+
+
+def count():
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+
+    cur.execute("SELECT COUNT(*) FROM assets")
+
+    total = cur.fetchone()[0]
+
+    conn.close()
+
+    return total
+

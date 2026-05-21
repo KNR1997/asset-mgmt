@@ -60,6 +60,48 @@ class AssetsView:
         self.add_btn.bind(
             "<Leave>", lambda e: self.add_btn.config(bg="#3498db"))
 
+        # Add Checkout button with icon
+        self.checkout_btn = tk.Button(
+            btn_frame,
+            text="➕ Checkout",
+            command=self.open_checkout_modal,
+            bg="#9412c7",
+            fg="white",
+            font=("Segoe UI", 10, "bold"),
+            padx=15,
+            pady=8,
+            relief="flat",
+            cursor="hand2"
+        )
+        self.checkout_btn.pack(side="left", padx=(0, 10))
+
+        # Hover effect for Add button
+        self.checkout_btn.bind(
+            "<Enter>", lambda e: self.checkout_btn.config(bg="#c068e2"))
+        self.checkout_btn.bind(
+            "<Leave>", lambda e: self.checkout_btn.config(bg="#9412c7"))
+    
+        # Add Checkin button with icon
+        self.checkin_btn = tk.Button(
+            btn_frame,
+            text="➕ Checkin",
+            command=self.open_checkin_modal,
+            bg="#4819ca",
+            fg="white",
+            font=("Segoe UI", 10, "bold"),
+            padx=15,
+            pady=8,
+            relief="flat",
+            cursor="hand2"
+        )
+        self.checkin_btn.pack(side="left", padx=(0, 10))
+
+        # Hover effect for Add button
+        self.checkin_btn.bind(
+            "<Enter>", lambda e: self.checkin_btn.config(bg="#7c5bd6"))
+        self.checkin_btn.bind(
+            "<Leave>", lambda e: self.checkin_btn.config(bg="#4819ca"))
+    
         # Delete button with icon
         self.delete_btn = tk.Button(
             btn_frame,
@@ -160,7 +202,8 @@ class AssetsView:
                 "Serial",
                 "Model",
                 "Category",
-                "Status"
+                "Status",
+                "Checked Out to"
             ),
             show="headings",
             height=15
@@ -172,13 +215,15 @@ class AssetsView:
         self.tree.heading("Model", text="Model")
         self.tree.heading("Category", text="Category")
         self.tree.heading("Status", text="Status")
+        self.tree.heading("Checked Out to", text="Checked Out to")
 
         self.tree.column("Asset Tag", width=80, anchor="center")
         self.tree.column("Asset Name", width=300, anchor="center")
-        self.tree.column("Serial", width=300, anchor="center")
-        self.tree.column("Model", width=300, anchor="center")
-        self.tree.column("Category", width=300, anchor="center")
-        self.tree.column("Status", width=300, anchor="center")
+        self.tree.column("Serial", width=150, anchor="center")
+        self.tree.column("Model", width=150, anchor="center")
+        self.tree.column("Category", width=150, anchor="center")
+        self.tree.column("Status", width=200, anchor="center")
+        self.tree.column("Checked Out to", width=300, anchor="center")
 
         # Add scrollbar
         scrollbar = ttk.Scrollbar(
@@ -273,7 +318,8 @@ class AssetsView:
                     asset.serial_number,
                     asset.model_name,
                     asset.category_name,
-                    self.get_status_display(asset.status)
+                    self.get_status_display(asset.status),
+                    asset.current_checkout_employee_name,
                 )
             )
 
@@ -314,13 +360,13 @@ class AssetsView:
         model_map = {model.name:  model.id for model in models}
 
         status_map = {
-            "Pending",
-            "Ready to Deploy",
-            "Archived",
-            "Broken - Not Fixable",
-            "Lost/Stolen",
-            "Out for Diagnostics",
-            "Out for Repair"
+            AssetStatus.PENDING.value,
+            AssetStatus.READY_TO_DEPLOY.value,
+            AssetStatus.ARCHIVED.value,
+            AssetStatus.BROKEN.value,
+            AssetStatus.LOST_STOLEN.value,
+            AssetStatus.OUT_FOR_DIAGNOSTICS.value,
+            AssetStatus.OUT_FOR_REPAIR.value,
         }
 
         tk.Label(modal, text="Asset Name").pack(pady=5)
@@ -331,9 +377,9 @@ class AssetsView:
         tag_entry = tk.Entry(modal)
         tag_entry.pack()
 
-        tk.Label(modal, text="Serial").pack(pady=5)
-        serial_entry = tk.Entry(modal)
-        serial_entry.pack()
+        tk.Label(modal, text="Serial No.").pack(pady=5)
+        serial_number_entry = tk.Entry(modal)
+        serial_number_entry.pack()
 
         tk.Label(modal, text="Model").pack()
         model_combo = ttk.Combobox(
@@ -358,14 +404,18 @@ class AssetsView:
         if asset:
             tag_entry.insert(0, asset.tag)
             name_entry.insert(0, asset.name)
-            serial_entry.insert(0, asset.serial_number)
+            serial_number_entry.insert(0, asset.serial_number)
             model_combo.set(asset.model_name if asset.model_name else "")
             status_combo.set(asset.status if asset.status else "")
             desc_entry.insert(0, asset.description)
 
         def save():
-            selected_model = model_combo.get()
+            name = name_entry.get().strip()
+            serial_number = serial_number_entry.get().strip()
+            tag = tag_entry.get().strip()
             selected_status = status_combo.get()
+            selected_model = model_combo.get()
+            description = desc_entry.get().strip()
 
             if not selected_model:
                 messagebox.showwarning("Warning", "Select a model")
@@ -373,25 +423,29 @@ class AssetsView:
 
             model_id = model_map[selected_model]
 
-            if asset:
-                asset_service.update(
-                    asset_id=asset.id,
-                    name=name_entry.get(),
-                    serialNumber=serial_entry.get(),
-                    tag=tag_entry.get(),
-                    status=selected_status,
-                    model_id=model_id,
-                    description=desc_entry.get(),
-                )
-            else:
-                asset_service.insert(
-                    name=name_entry.get(),
-                    serialNumber=serial_entry.get(),
-                    tag=tag_entry.get(),
-                    status=selected_status,
-                    model_id=model_id,
-                    description=desc_entry.get(),
-                )
+            try:
+                if asset:
+                    asset_service.update(
+                        asset_id=asset.id,
+                        name=name,
+                        serialNumber=serial_number,
+                        tag=tag,
+                        status=selected_status,
+                        model_id=model_id,
+                        description=description,
+                    )
+                else:
+                    asset_service.insert(
+                        name=name,
+                        serialNumber=serial_number,
+                        tag=tag,
+                        status=selected_status,
+                        model_id=model_id,
+                        description=description,
+                    )
+            except Exception as e:
+                messagebox.showerror(
+                    "Error", f"Failed to save asset: {str(e)}")
 
             modal.destroy()
             self.load_assets()
@@ -400,19 +454,24 @@ class AssetsView:
 
     def open_checkout_modal(self):
         selected = self.tree.focus()
-        selected_index = self.tree.index(selected)
-        values = self.tree.item(selected, "values")
-
-        asset = self.assets[selected_index]
-
-        if not values:
+        
+        if not selected:
             messagebox.showwarning("Warning", "Select an Asset")
             return
+        
+        selected_index = self.tree.index(selected)
+        asset = self.assets[selected_index]
 
-        # if asset.status != AssetStatus.READY_TO_DEPLOY:
-        #     messagebox.showwarning("Warning", "Asset is not ready to deploy")
-        #     return
-
+        print('asset status---------: ', asset.status)
+        
+        if asset.status == AssetStatus.DEPLOYED:
+            messagebox.showwarning("Warning", "Asset is already deployed")
+            return
+        
+        if asset.status == AssetStatus.BROKEN:
+            messagebox.showwarning("Warning", "Asset is broken")
+            return
+        
         self.open_checkout_form("Checkout Asset", asset)
 
     def open_checkout_form(self, title, asset: Asset):
@@ -427,9 +486,6 @@ class AssetsView:
         # Load employees
         employees = employee_service.get_all()
         employee_map = {employee.name: employee.id for employee in employees}
-
-        print('employee_map-----------: ', employee_map)
-        print('asset-----------: ', asset)
 
         checkout_status_map = {
             "Ready to Deploy",

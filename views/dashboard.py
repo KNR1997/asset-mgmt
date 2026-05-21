@@ -1,5 +1,8 @@
 import tkinter as tk
-from tkinter import font as tkfont
+from services import asset_service as asset_service
+from services import employee_service as employee_service
+from services import license_service as license_service
+from services import accessory_service as accessory_service
 
 
 class DashboardView:
@@ -24,31 +27,38 @@ class DashboardView:
         separator.pack(fill="x", padx=20, pady=(0, 20))
         
         # Demo mode banner
-        demo_banner = tk.Frame(self.frame, bg="#f39c12", height=40)
-        demo_banner.pack(fill="x", padx=20, pady=(0, 20))
+        # demo_banner = tk.Frame(self.frame, bg="#f39c12", height=40)
+        # demo_banner.pack(fill="x", padx=20, pady=(0, 20))
         
-        tk.Label(
-            demo_banner,
-            text="⚠️ DEMO MODE: Some features are disabled for this installation.",
-            font=("Segoe UI", 10),
-            fg="white",
-            bg="#f39c12"
-        ).pack(expand=True, pady=10)
+        # tk.Label(
+        #     demo_banner,
+        #     text="⚠️ DEMO MODE: Some features are disabled for this installation.",
+        #     font=("Segoe UI", 10),
+        #     fg="white",
+        #     bg="#f39c12"
+        # ).pack(expand=True, pady=10)
         
         # Create main container for cards
         cards_container = tk.Frame(self.frame, bg="#f5f6fa")
         cards_container.pack(fill="both", expand=True, padx=20, pady=(0, 20))
         
+        asset_count = asset_service.count()
+        employee_count = employee_service.count()
+        employee_count = employee_service.count()
+        license_count = license_service.count()
+        license_count = license_service.count()
+        accessory_count = accessory_service.count()
+
         # Card data
         cards_data = [
-            {"title": "Assets", "count": "2,608", "color": "#3498db", "icon": "💻"},
-            {"title": "Licenses", "count": "50", "color": "#2ecc71", "icon": "📜"},
-            {"title": "Accessories", "count": "4", "color": "#e67e22", "icon": "🖱️"},
+            {"title": "Assets", "count": asset_count, "color": "#3498db", "icon": "💻"},
+            {"title": "Licenses", "count": license_count, "color": "#2ecc71", "icon": "📜"},
+            {"title": "Accessories", "count": accessory_count, "color": "#e67e22", "icon": "🖱️"},
             {"title": "Consumables", "count": "3", "color": "#9b59b6", "icon": "📦"},
             {"title": "Components", "count": "4", "color": "#1abc9c", "icon": "🔧"},
-            {"title": "People", "count": "2,088", "color": "#e74c3c", "icon": "👥"}
+            {"title": "People", "count": employee_count, "color": "#e74c3c", "icon": "👥"}
         ]
-        
+
         # Create cards in grid
         for i, card in enumerate(cards_data):
             row = i // 2

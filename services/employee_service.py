@@ -96,3 +96,16 @@ def delete(emp_id):
 
     conn.commit()
     conn.close()
+
+
+def count():
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+
+    cur.execute("SELECT COUNT(*) FROM employees")
+
+    total = cur.fetchone()[0]
+
+    conn.close()
+
+    return total

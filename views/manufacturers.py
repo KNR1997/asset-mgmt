@@ -151,7 +151,7 @@ class ManufacturersView:
         self.tree = ttk.Treeview(
             table_frame,
             columns=(
-                "ID",
+                # "ID",
                 "Name",
                 "URL",
                 "Support URL"
@@ -160,12 +160,12 @@ class ManufacturersView:
             height=15
         )
 
-        self.tree.heading("ID", text="ID")
+        # self.tree.heading("ID", text="ID")
         self.tree.heading("Name", text="Name")
         self.tree.heading("URL", text="Model No")
         self.tree.heading("Support URL", text="Category")
 
-        self.tree.column("ID", width=80, anchor="center")
+        # self.tree.column("ID", width=80, anchor="center")
         self.tree.column("Name", width=300, anchor="center")
         self.tree.column("URL", width=300, anchor="center")
         self.tree.column("Support URL", width=300, anchor="center")
@@ -209,7 +209,7 @@ class ManufacturersView:
                 "",
                 tk.END,
                 values=(
-                    manufacturer.id,
+                    # manufacturer.id,
                     manufacturer.name,
                     manufacturer.url,
                     manufacturer.supportURL,

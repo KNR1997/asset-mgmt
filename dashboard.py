@@ -38,10 +38,14 @@ class Dashboard:
         self.button_hover_bg = "#3d566e"
 
         # Create sidebar buttons with references
-        self.assets_btn = self.create_sidebar_button(
+        self.dashboard_btn = self.create_sidebar_button(
             self.nav_frame, "📊 Dashboard", self.show_dashboard)
         self.assets_btn = self.create_sidebar_button(
             self.nav_frame, "💻 Assets", self.show_assets)
+        self.licenses_btn = self.create_sidebar_button(
+            self.nav_frame, "📜 Licenses", self.show_licenses)
+        self.accessories_btn = self.create_sidebar_button(
+            self.nav_frame, "🖱️ Accessories", self.show_accessories)
         self.employees_btn = self.create_sidebar_button(
             self.nav_frame, "👥 Employees", self.show_employees)
         self.manufacturers_btn = self.create_sidebar_button(
@@ -55,10 +59,10 @@ class Dashboard:
         self.create_logout_button()
 
         # Set initial active button
-        self.set_active_button(self.assets_btn)
+        self.set_active_button(self.dashboard_btn)
 
         # Default view
-        self.show_assets()
+        self.show_dashboard()
 
     def create_header(self):
         """Create logo/system name header at the top of sidebar"""
@@ -186,6 +190,22 @@ class Dashboard:
             AssetsView(self.content)
         except ImportError:
             self.show_placeholder("Assets View")
+
+    def show_licenses(self):
+        self.clear_content()
+        try:
+            from views.license import LicensesView
+            LicensesView(self.content)
+        except ImportError:
+            self.show_placeholder("Licenses View")
+
+    def show_accessories(self):
+        self.clear_content()
+        try:
+            from views.accessories import AccessoriesView
+            AccessoriesView(self.content)
+        except ImportError:
+            self.show_placeholder("Accessories View")
 
     def show_employees(self):
         self.clear_content()

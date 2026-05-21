@@ -10,4 +10,5 @@ class AssetStatus(str, Enum):
     PENDING = "Pending"
     LOST_STOLEN = "Lost/Stolen"
     OUT_FOR_DIAGNOSTICS = "Out for Diagnostics"
+    OUT_FOR_REPAIR = "Out for Repair"
     DEPLOYED = "Deployed"

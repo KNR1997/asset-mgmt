@@ -2,8 +2,6 @@ from dataclasses import dataclass
 
 
 @dataclass
-class Category:
+class Type:
     id: int
     name: str
-    description: str
-    type_name: str

@@ -1,12 +1,12 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-from services import category_service as service
+from services import license_service as service
 from services import type_service as type_service
-from models.category import Category
+from models.license import License
 from typing import Optional
 
 
-class CategoriesView:
+class LicensesView:
     def __init__(self, parent):
         self.categories = []
         self.frame = tk.Frame(parent, bg="#f5f6fa")
@@ -18,7 +18,7 @@ class CategoriesView:
 
         tk.Label(
             header_frame,
-            text="📁 Categories",
+            text="📜 Licenses",
             font=("Segoe UI", 20, "bold"),
             fg="#2c3e50",
             bg="#f5f6fa"
@@ -36,7 +36,7 @@ class CategoriesView:
         btn_frame = tk.Frame(top, bg="#f5f6fa")
         btn_frame.pack(side="left")
 
-        # Add Category button with icon
+        # Add License button with icon
         self.add_btn = tk.Button(
             btn_frame,
             text="➕ Add New",
@@ -61,7 +61,7 @@ class CategoriesView:
         self.delete_btn = tk.Button(
             btn_frame,
             text="🗑️ Delete Selected",
-            command=self.delete_category,
+            command=self.delete_license,
             bg="#e74c3c",
             fg="white",
             font=("Segoe UI", 10, "bold"),
@@ -153,20 +153,23 @@ class CategoriesView:
             table_frame,
             columns=(
                 # "ID", 
-                "Name", 
-                "Type"
+                "Software Name", 
+                "Category Name",
+                "Seats"
             ),
             show="headings",
             height=15
         )
 
         # self.tree.heading("ID", text="ID")
-        self.tree.heading("Name", text="Category Name")
-        self.tree.heading("Type", text="Type")
+        self.tree.heading("Software Name", text="Software Name")
+        self.tree.heading("Category Name", text="Type")
+        self.tree.heading("Seats", text="Seats")
 
         # self.tree.column("ID", width=80, anchor="center")
-        self.tree.column("Name", width=300, anchor="center")
-        self.tree.column("Type", width=300, anchor="center")
+        self.tree.column("Software Name", width=300, anchor="center")
+        self.tree.column("Category Name", width=300, anchor="center")
+        self.tree.column("Seats", width=300, anchor="center")
 
         # Add scrollbar
         scrollbar = ttk.Scrollbar(
@@ -194,23 +197,24 @@ class CategoriesView:
             pady=(0, 10)
         )
 
-        self.load_categories()
+        self.load_licenses()
 
-    def load_categories(self, keyword=""):
+    def load_licenses(self, keyword=""):
         # Clear existing items
         for row in self.tree.get_children():
             self.tree.delete(row)
 
         rows = service.get_all(keyword)
 
-        for category in rows:
+        for license in rows:
             self.tree.insert(
                 "",
                 tk.END,
                 values=(
-                    # category.id,
-                    category.name,
-                    category.type_name,
+                    # license.id,
+                    license.softwareName,
+                    license.categoryName,
+                    license.seats,
                 )
             )
 
@@ -222,7 +226,7 @@ class CategoriesView:
 
     def on_search(self, *args):
         keyword = self.search_var.get()
-        self.load_categories(keyword)
+        self.load_licenses(keyword)
 
         # Show clear button if search has text
         if keyword and not self.clear_btn.winfo_ismapped():
@@ -237,9 +241,9 @@ class CategoriesView:
         self.search_entry.focus()
 
     def open_add_modal(self):
-        self.open_form("Add Category")
+        self.open_form("Add License")
 
-    def open_form(self, title, category: Optional[Category] = None):
+    def open_form(self, title, license: Optional[License] = None):
         modal = tk.Toplevel()
         modal.title(title)
         modal.geometry("400x300")
@@ -254,152 +258,60 @@ class CategoriesView:
         types = type_service.get_all()
         type_map = {type.name: type.id for type in types}
 
-
-        # Center on screen
-        # x = modal.winfo_screenwidth() // 2 - 200
-        # y = modal.winfo_screenheight() // 2 - 125
-        # modal.geometry(f"+{x}+{y}")
-
-        # Icon
-        # tk.Label(
-        #     modal,
-        #     text="📁",
-        #     font=("Segoe UI", 40),
-        #     bg="#f5f6fa",
-        #     fg="#3498db"
-        # ).pack(pady=(20, 10))
-
-        # Title
-        # tk.Label(
-        #     modal,
-        #     text=title,
-        #     font=("Segoe UI", 14, "bold"),
-        #     bg="#f5f6fa",
-        #     fg="#2c3e50"
-        # ).pack(pady=(0, 20))
-
-        # Form frame
-        # form_frame = tk.Frame(modal, bg="#f5f6fa")
-        # form_frame.pack(pady=10)
-
-        # tk.Label(
-        #     form_frame,
-        #     text="Category Name:",
-        #     font=("Segoe UI", 10),
-        #     bg="#f5f6fa",
-        #     fg="#2c3e50"
-        # ).pack(anchor="w", pady=(0, 5))
-        # name_entry = tk.Entry(
-        #     form_frame,
-        #     font=("Segoe UI", 11),
-        #     width=30,
-        #     relief="solid",
-        #     borderwidth=1
-        # )
-        # name_entry.pack(pady=(0, 15), ipady=5)
+        tk.Label(modal, text="Software Name").pack()
+        software_name_entry = tk.Entry(modal)
+        software_name_entry.pack()
 
         tk.Label(modal, text="Category Name").pack()
-        name_entry = tk.Entry(modal)
-        name_entry.pack()
+        category_name_entry = tk.Entry(modal)
+        category_name_entry.pack()
 
-        tk.Label(modal, text="Type").pack()
-        type_combo = ttk.Combobox(
-            modal,
-            values=list(type_map.keys()),
-            state="readonly"
-        )
-        type_combo.pack()
+        tk.Label(modal, text="Seats").pack()
+        seats_entry = tk.Entry(modal)
+        seats_entry.pack()
 
-        if category:
-            name_entry.insert(0, category.name)
-            name_entry.focus()
-        else:
-            name_entry.focus()
-
-        # Button frame
-        btn_frame = tk.Frame(modal, bg="#f5f6fa")
-        btn_frame.pack(pady=10)
+        if license:
+            software_name_entry.insert(0, license.softwareName)
+            category_name_entry.insert(0, license.categoryName)
+            seats_entry.insert(0, license.seats)
 
         def save():
-            name = name_entry.get().strip()
-            selected_type = type_combo.get()
+            software_name = software_name_entry.get().strip()
+            category_name = category_name_entry.get().strip()
+            seats = seats_entry.get().strip()
 
-            if not name:
+            if not software_name:
                 messagebox.showwarning(
-                    "Warning", "Please enter a category name")
-                name_entry.focus()
+                    "Warning", "Please enter a software name")
+                software_name_entry.focus()
                 return
 
-            type_id = type_map[selected_type]
-
             try:
-                if category:
+                if license:
                     service.update(
-                        category_id=category.id,
-                        name=name,
+                        license_id=license.id,
+                        softwareName=software_name,
+                        categoryName=category_name,
+                        seats=seats,
                     )
-                    # messagebox.showinfo(
-                    #     "Success", "Category updated successfully!")
+                    messagebox.showinfo(
+                        "Success", "License updated successfully!")
                 else:
                     service.insert(
-                        name=name,
-                        type_id=type_id,
-                        description='',
+                        softwareName=software_name,
+                        categoryName=category_name,
+                        seats=seats,
                     )
-                    # messagebox.showinfo(
-                    #     "Success", "Category added successfully!")
+                    messagebox.showinfo(
+                        "Success", "License added successfully!")
 
                 modal.destroy()
-                self.load_categories()
+                self.load_licenses()
             except Exception as e:
                 messagebox.showerror(
-                    "Error", f"Failed to save category: {str(e)}")
-
-                modal.destroy()
-                self.load_categories()
+                    "Error", f"Failed to save license: {str(e)}")
 
         tk.Button(modal, text="Save", command=save).pack(pady=10)
-
-        # Save button
-        # save_btn = tk.Button(
-        #     btn_frame,
-        #     text="💾 Save",
-        #     command=save,
-        #     bg="#3498db",
-        #     fg="white",
-        #     font=("Segoe UI", 10, "bold"),
-        #     padx=20,
-        #     pady=8,
-        #     relief="flat",
-        #     cursor="hand2"
-        # )
-        # save_btn.pack(side="left", padx=5)
-
-        # Hover effect for Save button
-        # save_btn.bind("<Enter>", lambda e: save_btn.config(bg="#2980b9"))
-        # save_btn.bind("<Leave>", lambda e: save_btn.config(bg="#3498db"))
-
-        # Cancel button
-        # cancel_btn = tk.Button(
-        #     btn_frame,
-        #     text="Cancel",
-        #     command=modal.destroy,
-        #     bg="#95a5a6",
-        #     fg="white",
-        #     font=("Segoe UI", 10),
-        #     padx=20,
-        #     pady=8,
-        #     relief="flat",
-        #     cursor="hand2"
-        # )
-        # cancel_btn.pack(side="left", padx=5)
-
-        # # Hover effect for Cancel button
-        # cancel_btn.bind("<Enter>", lambda e: cancel_btn.config(bg="#7f8c8d"))
-        # cancel_btn.bind("<Leave>", lambda e: cancel_btn.config(bg="#95a5a6"))
-
-        # # Bind Enter key to save
-        # modal.bind('<Return>', lambda event: save())
 
     def on_double_click(self, event):
         selected = self.tree.focus()
@@ -410,25 +322,25 @@ class CategoriesView:
         values = self.tree.item(selected, "values")
 
         if selected_index < len(self.categories):
-            category = self.categories[selected_index]
+            license = self.categories[selected_index]
 
             if values:
-                self.open_form("Edit Category", category)
+                self.open_form("Edit License", license)
 
-    def delete_category(self):
+    def delete_license(self):
         selected = self.tree.focus()
         values = self.tree.item(selected, "values")
 
         if not values:
             messagebox.showwarning(
-                "Warning", "Please select a category to delete")
+                "Warning", "Please select a license to delete")
             return
 
-        # Show category name in confirmation
-        category_name = values[1]
+        # Show license name in confirmation
+        license_name = values[1]
         confirm = messagebox.askyesno(
             "Confirm Delete",
-            f"Are you sure you want to delete category '{category_name}'?\n\nThis action cannot be undone.",
+            f"Are you sure you want to delete license '{license_name}'?\n\nThis action cannot be undone.",
             icon="warning"
         )
 
@@ -437,16 +349,8 @@ class CategoriesView:
 
         try:
             service.delete(values[0])
-            messagebox.showinfo("Success", "Category deleted successfully!")
-            self.load_categories()
+            messagebox.showinfo("Success", "License deleted successfully!")
+            self.load_licenses()
         except Exception as e:
             messagebox.showerror(
-                "Error", f"Failed to delete category: {str(e)}")
-
-
-# if __name__ == "__main__":
-#     # For testing
-#     root = tk.Tk()
-#     root.geometry("800x600")
-#     app = CategoriesView(root)
-#     root.mainloop()
+                "Error", f"Failed to delete license: {str(e)}")

@@ -43,12 +43,32 @@ def setup():
     )
     """)
 
+    # Types
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS types (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT
+    )
+    """)
+
+    # Default types
+    cur.execute("""
+    INSERT OR IGNORE INTO types (name)
+    VALUES
+        ('Asset'),
+        ('License'),
+        ('Accessory'),
+        ('Consumable')
+    """)
+
     # Categories
     cur.execute("""
     CREATE TABLE IF NOT EXISTS categories (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT,
-        description TEXT
+        description TEXT,
+        type_id INTEGER,
+        FOREIGN KEY (type_id) REFERENCES types(id)
     )
     """)
 
@@ -82,6 +102,47 @@ def setup():
     )
     """)
 
+    # Accessories
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS accessories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        accessoryName TEXT NOT NULL,
+        categoryName TEXT NOT NULL,
+        supplierName TEXT,
+        modelNumber TEXT,
+        minQuantity INTEGER,
+        orderNumber TEXT,
+        unitCost INTEGER,
+        purchaseDate TEXT,
+        qunatity INTEGER,
+        notes TEXT,     
+        manufacturer_id INTEGER,
+        FOREIGN KEY (manufacturer_id) REFERENCES manufacturers(id)
+    )
+    """)
+
+    # Licenses
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS licenses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        softwareName TEXT NOT NULL,
+        categoryName TEXT NOT NULL,
+        seats INTEGER DEFAULT 0,
+        minQuantity INTEGER,
+        productKey TEXT,
+        licensedTo TEXT,
+        licensedToEmail TEXT,
+        orderNumber TEXT,
+        purchaseCost INTEGER,
+        purchaseDate TEXT,
+        expirationDate TEXT,
+        terminationDate TEXT,
+        notes TEXT,     
+        manufacturer_id INTEGER,
+        FOREIGN KEY (manufacturer_id) REFERENCES manufacturers(id)
+    )
+    """)
+
     # Checkout
     cur.execute("""
     CREATE TABLE IF NOT EXISTS checkouts (
@@ -109,5 +170,25 @@ def setup():
     )
     """)
 
+    # Repairs table
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS repairs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        asset_id INTEGER NOT NULL,
+        checkout_id INTEGER,  -- Optional: link to the checkout that caused the damage
+        repair_date TEXT NOT NULL,
+        repair_cost REAL,
+        status TEXT DEFAULT 'Completed',  -- 'Pending', 'In Progress', 'Completed'
+        description TEXT,
+        notes TEXT,
+        performed_by TEXT,  -- Repair technician or company name
+        warranty_covered BOOLEAN DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE CASCADE,
+        FOREIGN KEY (checkout_id) REFERENCES checkouts(id) ON DELETE SET NULL
+    )
+    """)
+    
     conn.commit()
     conn.close()

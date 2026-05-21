@@ -153,7 +153,7 @@ class AssetModelsView:
         self.tree = ttk.Treeview(
             table_frame,
             columns=(
-                "ID",
+                # "ID",
                 "Name",
                 "Model No",
                 "Category"
@@ -162,12 +162,12 @@ class AssetModelsView:
             height=15
         )
 
-        self.tree.heading("ID", text="ID")
+        # self.tree.heading("ID", text="ID")
         self.tree.heading("Name", text="Name")
         self.tree.heading("Model No", text="Model No")
         self.tree.heading("Category", text="Category")
 
-        self.tree.column("ID", width=80, anchor="center")
+        # self.tree.column("ID", width=80, anchor="center")
         self.tree.column("Name", width=300, anchor="center")
         self.tree.column("Model No", width=300, anchor="center")
         self.tree.column("Category", width=300, anchor="center")
@@ -211,7 +211,7 @@ class AssetModelsView:
                 "",
                 tk.END,
                 values=(
-                    model.id,
+                    # model.id,
                     model.name,
                     model.modelNumber,
                     model.category_name,

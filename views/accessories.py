@@ -1,14 +1,14 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-from services import category_service as service
+from services import accessory_service as service
 from services import type_service as type_service
-from models.category import Category
+from models.accessory import Accessory
 from typing import Optional
 
 
-class CategoriesView:
+class AccessoriesView:
     def __init__(self, parent):
-        self.categories = []
+        self.accessories = []
         self.frame = tk.Frame(parent, bg="#f5f6fa")
         self.frame.pack(fill="both", expand=True)
 
@@ -18,7 +18,7 @@ class CategoriesView:
 
         tk.Label(
             header_frame,
-            text="📁 Categories",
+            text="🖱️ Accessories",
             font=("Segoe UI", 20, "bold"),
             fg="#2c3e50",
             bg="#f5f6fa"
@@ -36,7 +36,7 @@ class CategoriesView:
         btn_frame = tk.Frame(top, bg="#f5f6fa")
         btn_frame.pack(side="left")
 
-        # Add Category button with icon
+        # Add Accessory button with icon
         self.add_btn = tk.Button(
             btn_frame,
             text="➕ Add New",
@@ -61,7 +61,7 @@ class CategoriesView:
         self.delete_btn = tk.Button(
             btn_frame,
             text="🗑️ Delete Selected",
-            command=self.delete_category,
+            command=self.delete_accessory,
             bg="#e74c3c",
             fg="white",
             font=("Segoe UI", 10, "bold"),
@@ -152,21 +152,30 @@ class CategoriesView:
         self.tree = ttk.Treeview(
             table_frame,
             columns=(
-                # "ID", 
-                "Name", 
-                "Type"
+                "Accessory Name", 
+                "Category Name",
+                "Supplier Name",
+                "Model No.", 
+                "Min. QTY", 
+                "Total", 
             ),
             show="headings",
             height=15
         )
 
-        # self.tree.heading("ID", text="ID")
-        self.tree.heading("Name", text="Category Name")
-        self.tree.heading("Type", text="Type")
+        self.tree.heading("Accessory Name", text="Accessory Name")
+        self.tree.heading("Category Name", text="Category Name")
+        self.tree.heading("Supplier Name", text="Supplier Name")
+        self.tree.heading("Model No.", text="Model No.")
+        self.tree.heading("Min. QTY", text="Min. QTY")
+        self.tree.heading("Total", text="Total")
 
-        # self.tree.column("ID", width=80, anchor="center")
-        self.tree.column("Name", width=300, anchor="center")
-        self.tree.column("Type", width=300, anchor="center")
+        self.tree.column("Accessory Name", width=300, anchor="center")
+        self.tree.column("Category Name", width=300, anchor="center")
+        self.tree.column("Supplier Name", width=300, anchor="center")
+        self.tree.column("Model No.", width=100, anchor="center")
+        self.tree.column("Min. QTY", width=100, anchor="center")
+        self.tree.column("Total", width=100, anchor="center")
 
         # Add scrollbar
         scrollbar = ttk.Scrollbar(
@@ -194,35 +203,38 @@ class CategoriesView:
             pady=(0, 10)
         )
 
-        self.load_categories()
+        self.load_accessories()
 
-    def load_categories(self, keyword=""):
+    def load_accessories(self, keyword=""):
         # Clear existing items
         for row in self.tree.get_children():
             self.tree.delete(row)
 
         rows = service.get_all(keyword)
 
-        for category in rows:
+        for accessory in rows:
             self.tree.insert(
                 "",
                 tk.END,
                 values=(
-                    # category.id,
-                    category.name,
-                    category.type_name,
+                    accessory.accessoryName,
+                    accessory.categoryName,
+                    accessory.supplierName,
+                    accessory.modelNumber,
+                    accessory.minQuantity,
+                    accessory.qunatity,
                 )
             )
 
-        self.categories = rows
+        self.accessories = rows
 
         # Update status label
         count = len(rows)
-        self.status_label.config(text=f"📊 Total categories: {count}")
+        self.status_label.config(text=f"📊 Total accessories: {count}")
 
     def on_search(self, *args):
         keyword = self.search_var.get()
-        self.load_categories(keyword)
+        self.load_accessories(keyword)
 
         # Show clear button if search has text
         if keyword and not self.clear_btn.winfo_ismapped():
@@ -237,169 +249,96 @@ class CategoriesView:
         self.search_entry.focus()
 
     def open_add_modal(self):
-        self.open_form("Add Category")
+        self.open_form("Add Accessory")
 
-    def open_form(self, title, category: Optional[Category] = None):
+    def open_form(self, title, accessory: Optional[Accessory] = None):
         modal = tk.Toplevel()
         modal.title(title)
-        modal.geometry("400x300")
-        # modal.resizable(False, False)
-        # modal.configure(bg="#f5f6fa")
+        modal.geometry("350x400")
 
         # Center the modal
         modal.transient(self.frame)
         modal.update_idletasks()
         modal.grab_set()
 
-        types = type_service.get_all()
-        type_map = {type.name: type.id for type in types}
-
-
-        # Center on screen
-        # x = modal.winfo_screenwidth() // 2 - 200
-        # y = modal.winfo_screenheight() // 2 - 125
-        # modal.geometry(f"+{x}+{y}")
-
-        # Icon
-        # tk.Label(
-        #     modal,
-        #     text="📁",
-        #     font=("Segoe UI", 40),
-        #     bg="#f5f6fa",
-        #     fg="#3498db"
-        # ).pack(pady=(20, 10))
-
-        # Title
-        # tk.Label(
-        #     modal,
-        #     text=title,
-        #     font=("Segoe UI", 14, "bold"),
-        #     bg="#f5f6fa",
-        #     fg="#2c3e50"
-        # ).pack(pady=(0, 20))
-
-        # Form frame
-        # form_frame = tk.Frame(modal, bg="#f5f6fa")
-        # form_frame.pack(pady=10)
-
-        # tk.Label(
-        #     form_frame,
-        #     text="Category Name:",
-        #     font=("Segoe UI", 10),
-        #     bg="#f5f6fa",
-        #     fg="#2c3e50"
-        # ).pack(anchor="w", pady=(0, 5))
-        # name_entry = tk.Entry(
-        #     form_frame,
-        #     font=("Segoe UI", 11),
-        #     width=30,
-        #     relief="solid",
-        #     borderwidth=1
-        # )
-        # name_entry.pack(pady=(0, 15), ipady=5)
+        tk.Label(modal, text="Accessory Name").pack()
+        accessory_name_entry = tk.Entry(modal)
+        accessory_name_entry.pack()
 
         tk.Label(modal, text="Category Name").pack()
-        name_entry = tk.Entry(modal)
-        name_entry.pack()
+        category_name_entry = tk.Entry(modal)
+        category_name_entry.pack()
 
-        tk.Label(modal, text="Type").pack()
-        type_combo = ttk.Combobox(
-            modal,
-            values=list(type_map.keys()),
-            state="readonly"
-        )
-        type_combo.pack()
+        tk.Label(modal, text="Supplier Name").pack()
+        supplier_name_entry = tk.Entry(modal)
+        supplier_name_entry.pack()
 
-        if category:
-            name_entry.insert(0, category.name)
-            name_entry.focus()
-        else:
-            name_entry.focus()
+        tk.Label(modal, text="Model No.").pack()
+        model_number_entry = tk.Entry(modal)
+        model_number_entry.pack()
 
-        # Button frame
-        btn_frame = tk.Frame(modal, bg="#f5f6fa")
-        btn_frame.pack(pady=10)
+        tk.Label(modal, text="Min. Quantity").pack()
+        min_qty_entry = tk.Entry(modal)
+        min_qty_entry.pack()
+
+        tk.Label(modal, text="Total").pack()
+        total_entry = tk.Entry(modal)
+        total_entry.pack()
+
+        if accessory:
+            accessory_name_entry.insert(0, accessory.accessoryName)
+            category_name_entry.insert(0, accessory.categoryName)
+            supplier_name_entry.insert(0, accessory.supplierName)
+            model_number_entry.insert(0, accessory.modelNumber)
+            min_qty_entry.insert(0, accessory.minQuantity)
+            total_entry.insert(0, accessory.qunatity)
 
         def save():
-            name = name_entry.get().strip()
-            selected_type = type_combo.get()
+            accessory_name = accessory_name_entry.get().strip()
+            category_name = category_name_entry.get().strip()
+            supplier_name = supplier_name_entry.get().strip()
+            model_number = model_number_entry.get().strip()
+            min_qty = min_qty_entry.get().strip()
+            total = total_entry.get().strip()
 
-            if not name:
+            if not accessory_name:
                 messagebox.showwarning(
-                    "Warning", "Please enter a category name")
-                name_entry.focus()
+                    "Warning", "Please enter a accessory name")
+                accessory_name_entry.focus()
                 return
 
-            type_id = type_map[selected_type]
-
             try:
-                if category:
+                if accessory:
                     service.update(
-                        category_id=category.id,
-                        name=name,
+                        accessory_id=accessory.id,
+                        accessoryName=accessory_name,
+                        categoryName=category_name,
+                        supplierName=supplier_name,
+                        modelNumber=model_number,
+                        minQuantity=min_qty,
+                        qunatity=total,
                     )
                     # messagebox.showinfo(
-                    #     "Success", "Category updated successfully!")
+                    #     "Success", "Accessory updated successfully!")
                 else:
                     service.insert(
-                        name=name,
-                        type_id=type_id,
-                        description='',
+                        accessoryName=accessory_name,
+                        categoryName=category_name,
+                        supplierName=supplier_name,
+                        modelNumber=model_number,
+                        minQuantity=min_qty,
+                        qunatity=total,
                     )
                     # messagebox.showinfo(
-                    #     "Success", "Category added successfully!")
-
-                modal.destroy()
-                self.load_categories()
+                    #     "Success", "Accessory added successfully!")
             except Exception as e:
                 messagebox.showerror(
-                    "Error", f"Failed to save category: {str(e)}")
+                    "Error", f"Failed to save accessory: {str(e)}")
 
-                modal.destroy()
-                self.load_categories()
+            modal.destroy()
+            self.load_accessories()
 
         tk.Button(modal, text="Save", command=save).pack(pady=10)
-
-        # Save button
-        # save_btn = tk.Button(
-        #     btn_frame,
-        #     text="💾 Save",
-        #     command=save,
-        #     bg="#3498db",
-        #     fg="white",
-        #     font=("Segoe UI", 10, "bold"),
-        #     padx=20,
-        #     pady=8,
-        #     relief="flat",
-        #     cursor="hand2"
-        # )
-        # save_btn.pack(side="left", padx=5)
-
-        # Hover effect for Save button
-        # save_btn.bind("<Enter>", lambda e: save_btn.config(bg="#2980b9"))
-        # save_btn.bind("<Leave>", lambda e: save_btn.config(bg="#3498db"))
-
-        # Cancel button
-        # cancel_btn = tk.Button(
-        #     btn_frame,
-        #     text="Cancel",
-        #     command=modal.destroy,
-        #     bg="#95a5a6",
-        #     fg="white",
-        #     font=("Segoe UI", 10),
-        #     padx=20,
-        #     pady=8,
-        #     relief="flat",
-        #     cursor="hand2"
-        # )
-        # cancel_btn.pack(side="left", padx=5)
-
-        # # Hover effect for Cancel button
-        # cancel_btn.bind("<Enter>", lambda e: cancel_btn.config(bg="#7f8c8d"))
-        # cancel_btn.bind("<Leave>", lambda e: cancel_btn.config(bg="#95a5a6"))
-
-        # # Bind Enter key to save
-        # modal.bind('<Return>', lambda event: save())
 
     def on_double_click(self, event):
         selected = self.tree.focus()
@@ -409,26 +348,26 @@ class CategoriesView:
         selected_index = self.tree.index(selected)
         values = self.tree.item(selected, "values")
 
-        if selected_index < len(self.categories):
-            category = self.categories[selected_index]
+        if selected_index < len(self.accessories):
+            accessory = self.accessories[selected_index]
 
             if values:
-                self.open_form("Edit Category", category)
+                self.open_form("Edit Accessory", accessory)
 
-    def delete_category(self):
+    def delete_accessory(self):
         selected = self.tree.focus()
         values = self.tree.item(selected, "values")
 
         if not values:
             messagebox.showwarning(
-                "Warning", "Please select a category to delete")
+                "Warning", "Please select a accessory to delete")
             return
 
-        # Show category name in confirmation
-        category_name = values[1]
+        # Show accessory name in confirmation
+        accessory_name = values[1]
         confirm = messagebox.askyesno(
             "Confirm Delete",
-            f"Are you sure you want to delete category '{category_name}'?\n\nThis action cannot be undone.",
+            f"Are you sure you want to delete accessory '{accessory_name}'?\n\nThis action cannot be undone.",
             icon="warning"
         )
 
@@ -437,16 +376,8 @@ class CategoriesView:
 
         try:
             service.delete(values[0])
-            messagebox.showinfo("Success", "Category deleted successfully!")
-            self.load_categories()
+            messagebox.showinfo("Success", "Accessory deleted successfully!")
+            self.load_accessories()
         except Exception as e:
             messagebox.showerror(
-                "Error", f"Failed to delete category: {str(e)}")
-
-
-# if __name__ == "__main__":
-#     # For testing
-#     root = tk.Tk()
-#     root.geometry("800x600")
-#     app = CategoriesView(root)
-#     root.mainloop()
+                "Error", f"Failed to delete accessory: {str(e)}")
