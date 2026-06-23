@@ -7,7 +7,7 @@ from typing import Optional
 
 class ManufacturersView:
     def __init__(self, parent):
-        self.categories = []
+        self.manufacturers = []
         self.frame = tk.Frame(parent, bg="#f5f6fa")
         self.frame.pack(fill="both", expand=True)
 
@@ -162,8 +162,8 @@ class ManufacturersView:
 
         # self.tree.heading("ID", text="ID")
         self.tree.heading("Name", text="Name")
-        self.tree.heading("URL", text="Model No")
-        self.tree.heading("Support URL", text="Category")
+        self.tree.heading("URL", text="URL")
+        self.tree.heading("Support URL", text="Support URL")
 
         # self.tree.column("ID", width=80, anchor="center")
         self.tree.column("Name", width=300, anchor="center")
@@ -216,7 +216,7 @@ class ManufacturersView:
                 )
             )
 
-        self.categories = rows
+        self.manufacturers = rows
 
     def on_search(self, *args):
         keyword = self.search_var.get()
@@ -231,44 +231,70 @@ class ManufacturersView:
     def open_form(self, title, manufacturer: Optional[Manufacturer] = None):
         modal = tk.Toplevel()
         modal.title(title)
-        modal.geometry("350x450")
+        modal.geometry("350x500")
 
         modal.transient(self.frame)
         modal.update_idletasks()
         modal.grab_set()
 
-        tk.Label(modal, text="Manufacturer Name").pack(pady=5)
+        # Helper function to create required label
+        def create_label(parent, text, required=False):
+            frame = tk.Frame(parent)
+            frame.pack(pady=(10, 0))
+
+            label = tk.Label(frame, text=text)
+            label.pack(side=tk.LEFT)
+
+            if required:
+                asterisk = tk.Label(frame, text=" *", fg="red",
+                                    font=("Arial", 10, "bold"))
+                asterisk.pack(side=tk.LEFT)
+
+            return frame
+
+        # Manufacturer Name
+        create_label(modal, "Manufacturer Name", required=True)
         name_entry = tk.Entry(modal)
-        name_entry.pack()
+        name_entry.pack(fill=tk.X, padx=20)
 
-        tk.Label(modal, text="URL").pack(pady=5)
+        # URL
+        create_label(modal, "URL")
         url_entry = tk.Entry(modal)
-        url_entry.pack()
+        url_entry.pack(fill=tk.X, padx=20)
 
-        tk.Label(modal, text="Support URL").pack(pady=5)
+        # Support URL
+        create_label(modal, "Support URL")
         support_url_entry = tk.Entry(modal)
-        support_url_entry.pack()
+        support_url_entry.pack(fill=tk.X, padx=20)
 
-        tk.Label(modal, text="Warranty Lookup URL").pack(pady=5)
+        # Warranty Lookup URL
+        create_label(modal, "Warranty Lookup URL")
         warranty_lookup_url_entry = tk.Entry(modal)
-        warranty_lookup_url_entry.pack()
+        warranty_lookup_url_entry.pack(fill=tk.X, padx=20)
 
-        tk.Label(modal, text="Support Phone").pack(pady=5)
+        # Support Phone
+        create_label(modal, "Support Phone")
         support_phone_entry = tk.Entry(modal)
-        support_phone_entry.pack()
+        support_phone_entry.pack(fill=tk.X, padx=20)
 
-        tk.Label(modal, text="Support Email").pack(pady=5)
+        # Support Email
+        create_label(modal, "Support Email")
         support_email_entry = tk.Entry(modal)
-        support_email_entry.pack()
+        support_email_entry.pack(fill=tk.X, padx=20)
 
-        tk.Label(modal, text="Notes").pack(pady=5)
+        # Notes
+        create_label(modal, "Notes")
         notes_entry = tk.Entry(modal)
-        notes_entry.pack()
+        notes_entry.pack(fill=tk.X, padx=20)
 
         if manufacturer:
             name_entry.insert(0, manufacturer.name)
             url_entry.insert(0, manufacturer.url)
             support_url_entry.insert(0, manufacturer.supportURL)
+            warranty_lookup_url_entry.insert(0, manufacturer.warrantyLookupUrl)
+            support_phone_entry.insert(0, manufacturer.supportPhone)
+            support_email_entry.insert(0, manufacturer.supportEmail)
+            notes_entry.insert(0, manufacturer.notes)
 
         def save():
             name = name_entry.get()
@@ -283,46 +309,84 @@ class ManufacturersView:
                 messagebox.showwarning("Warning", "Enter name")
                 return
 
-            if manufacturer:
-                service.update(
-                    manufacturer_id=manufacturer.id,
-                    name=name,
-                    url=url,
-                    supportURL=supportURL,
-                    warrantyLookupUrl=warrantyLookupUrl,
-                    supportPhone=supportPhone,
-                    supportEmail=supportEmail,
-                    notes=notes,
-                )
-            else:
-                service.insert(
-                    name=name,
-                    url=url,
-                    supportURL=supportURL,
-                    warrantyLookupUrl=warrantyLookupUrl,
-                    supportPhone=supportPhone,
-                    supportEmail=supportEmail,
-                    notes=notes,
-                )
+            try:
+                if manufacturer:
+                    service.update(
+                        manufacturer_id=manufacturer.id,
+                        name=name,
+                        url=url,
+                        supportURL=supportURL,
+                        warrantyLookupUrl=warrantyLookupUrl,
+                        supportPhone=supportPhone,
+                        supportEmail=supportEmail,
+                        notes=notes,
+                    )
+                else:
+                    service.insert(
+                        name=name,
+                        url=url,
+                        supportURL=supportURL,
+                        warrantyLookupUrl=warrantyLookupUrl,
+                        supportPhone=supportPhone,
+                        supportEmail=supportEmail,
+                        notes=notes,
+                    )
+                modal.destroy()
+                self.load_manufacturers()
+            except Exception as e:
+                messagebox.showerror(
+                    "Error", f"Failed to save manufacturer: {str(e)}")
 
-            modal.destroy()
-            self.load_manufacturers()
+        # Save and Cancel buttons
+        btn_frame = tk.Frame(modal)
+        btn_frame.pack(pady=20)
 
-        tk.Button(modal, text="Save", command=save).pack(pady=10)
+        tk.Button(
+            btn_frame,
+            text="💾 Save",
+            command=save,
+            bg="#2ecc71",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            padx=20,
+            pady=8,
+            relief="flat",
+            cursor="hand2"
+        ).pack(side="left", padx=(0, 10))
+
+        tk.Button(
+            btn_frame,
+            text="✖ Cancel",
+            command=modal.destroy,
+            bg="#e74c3c",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            padx=20,
+            pady=8,
+            relief="flat",
+            cursor="hand2"
+        ).pack(side="left")
+
+        # Bind keyboard shortcuts
+        modal.bind("<Return>", lambda e: save())
+        modal.bind("<Escape>", lambda e: modal.destroy())
 
     def on_double_click(self, event):
         selected = self.tree.focus()
         selected_index = self.tree.index(selected)
         values = self.tree.item(selected, "values")
 
-        manufacturer = self.categories[selected_index]
+        manufacturer = self.manufacturers[selected_index]
 
         if values:
             self.open_form("Edit Manufacturer", manufacturer)
 
     def delete_manufacturer(self):
         selected = self.tree.focus()
+        selected_index = self.tree.index(selected)
         values = self.tree.item(selected, "values")
+
+        manufacturer = self.manufacturers[selected_index]
 
         if not values:
             messagebox.showwarning("Warning", "Select a row")
@@ -332,5 +396,5 @@ class ManufacturersView:
         if not confirm:
             return
 
-        service.delete(values[0])
+        service.delete(manufacturer.id)
         self.load_manufacturers()

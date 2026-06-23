@@ -48,11 +48,27 @@ def get_all(keyword="") -> list[Category]:
     return categories
 
 
+def get_by_name(name):
+    """Get asset by name"""
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM categories WHERE name = ?", (name,))
+    result = cur.fetchone()
+    conn.close()
+    return dict(result) if result else None
+
+
 def insert(
     name,
     type_id,
     description
 ):
+    # Validate uniqueness before insert
+    if get_by_name(name):
+        raise ValueError(f"Category with name '{name}' already exists")
+
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
@@ -74,20 +90,28 @@ def insert(
 
 
 def update(
-    category_id, 
-    name
+    category_id,
+    name,
+    type_id,
 ):
+    # When updating, exclude the current asset from uniqueness check
+    existing_by_name = get_by_name(name)
+    if existing_by_name and existing_by_name['id'] != category_id:
+        raise ValueError(f"Category with name '{name}' already exists")
+
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
     cur.execute("""
         UPDATE categories SET
             name=?,
+            type_id=?
         WHERE id=?
         """, (
-            name, 
-            category_id
-        ))
+        name,
+        type_id,
+        category_id
+    ))
 
     conn.commit()
     conn.close()

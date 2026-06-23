@@ -1,4 +1,5 @@
 import tkinter as tk
+# from utils.toast import success
 from tkinter import ttk, messagebox
 from services import employee_service as employee_service
 from models.employee import Employee
@@ -154,6 +155,8 @@ class EmployeesView:
                 # "ID",
                 "Name",
                 "Department",
+                "Email",
+                "Contact Number",
             ),
             show="headings",
             height=15
@@ -162,10 +165,14 @@ class EmployeesView:
         # self.tree.heading("ID", text="ID")
         self.tree.heading("Name", text="Name")
         self.tree.heading("Department", text="Department")
+        self.tree.heading("Email", text="Email")
+        self.tree.heading("Contact Number", text="Contact Number")
 
         # self.tree.column("ID", width=80, anchor="center")
         self.tree.column("Name", width=300, anchor="center")
         self.tree.column("Department", width=300, anchor="center")
+        self.tree.column("Email", width=300, anchor="center")
+        self.tree.column("Contact Number", width=300, anchor="center")
 
         # Add scrollbar
         scrollbar = ttk.Scrollbar(
@@ -209,6 +216,8 @@ class EmployeesView:
                     # model.id,
                     model.name,
                     model.department,
+                    model.email,
+                    model.contact_number,
                 )
             )
 
@@ -224,47 +233,126 @@ class EmployeesView:
     def open_add_modal(self):
         self.open_form("Add Employee")
 
-    def open_form(self, title, model: Optional[Employee] = None):
+    def open_form(self, title, employee: Optional[Employee] = None):
         modal = tk.Toplevel()
         modal.title(title)
-        modal.geometry("350x300")
+        modal.geometry("350x380")
 
         modal.transient(self.frame)
         modal.update_idletasks()
         modal.grab_set()
 
-        tk.Label(modal, text="Employee Name").pack()
+        # Helper function to create required label
+        def create_label(parent, text, required=False):
+            frame = tk.Frame(parent)
+            frame.pack(pady=(10, 0))
+            
+            label = tk.Label(frame, text=text)
+            label.pack(side=tk.LEFT)
+            
+            if required:
+                asterisk = tk.Label(frame, text=" *", fg="red", font=("Arial", 10, "bold"))
+                asterisk.pack(side=tk.LEFT)
+            
+            return frame
+        
+        # Employee Name
+        create_label(modal, "Employee Name", required=True)
         name_entry = tk.Entry(modal)
-        name_entry.pack()
+        name_entry.pack(fill=tk.X, padx=20)
 
-        tk.Label(modal, text="Department Name").pack()
+        # Department Name
+        create_label(modal, "Department Name")
         department_entry = tk.Entry(modal)
-        department_entry.pack()
+        department_entry.pack(fill=tk.X, padx=20)
 
-        if model:
-            name_entry.insert(0, model.name)
-            department_entry.insert(0, model.department)
+        # Email
+        create_label(modal, "Email", required=True)
+        email_entry = tk.Entry(modal)
+        email_entry.pack(fill=tk.X, padx=20)
+
+        # Contact Number
+        create_label(modal, "Contact Number")
+        contact_number_entry = tk.Entry(modal)
+        contact_number_entry.pack(fill=tk.X, padx=20)
+
+        if employee:
+            name_entry.insert(0, employee.name)
+            department_entry.insert(0, employee.department)
+            email_entry.insert(0, employee.email)
+            contact_number_entry.insert(0, employee.contact_number)
 
         def save():
             name = name_entry.get()
             department = department_entry.get()
+            email = email_entry.get()
+            contact_number = contact_number_entry.get()
 
-            if model:
-                employee_service.update(
-                    employee_id=model.id,
-                    name=name,
-                    department=department,
-                )
-            else:
-                employee_service.insert(
-                    name=name,
-                    department=department,
-                )
+            if not name:
+                messagebox.showwarning("Warning", "Plese provide employee name")
+                return
+            
+            if not email:
+                messagebox.showwarning("Warning", "Plese provide employee email")
+                return
+            
+            try:
+                if employee:
+                    employee_service.update(
+                        employee_id=employee.id,
+                        name=name,
+                        department=department,
+                        email=email,
+                        contact_number=contact_number,
+                    )
+                    messagebox.showinfo(title, "Employee updated successfully")
+                else:
+                    employee_service.insert(
+                        name=name,
+                        department=department,
+                        email=email,
+                        contact_number=contact_number,
+                    )
+                    messagebox.showinfo(title, "Employee created successfully")
+                modal.destroy()
+                self.load_employees()
+            except Exception as e:
+                messagebox.showerror(
+                    "Error", f"Failed to save employee: {str(e)}")
+            
+        # Save and Cancel buttons
+        btn_frame = tk.Frame(modal)
+        btn_frame.pack(pady=20)
 
-            modal.destroy()
-            self.load_employees()
+        tk.Button(
+                btn_frame,
+                text="💾 Save",
+                command=save,
+                bg="#2ecc71",
+                fg="white",
+                font=("Arial", 10, "bold"),
+                padx=20,
+                pady=8,
+                relief="flat",
+                cursor="hand2"
+        ).pack(side="left", padx=(0, 10))
+        
+        tk.Button(
+                btn_frame,
+                text="✖ Cancel",
+                command=modal.destroy,
+                bg="#e74c3c",
+                fg="white",
+                font=("Arial", 10, "bold"),
+                padx=20,
+                pady=8,
+                relief="flat",
+                cursor="hand2"
+        ).pack(side="left")
 
-        tk.Button(modal, text="Save", command=save).pack(pady=10)
+        # Bind keyboard shortcuts
+        modal.bind("<Return>", lambda e: save())
+        modal.bind("<Escape>", lambda e: modal.destroy())
 
     def on_double_click(self, event):
         selected = self.tree.focus()
@@ -278,15 +366,18 @@ class EmployeesView:
 
     def delete_employee(self):
         selected = self.tree.focus()
+        selected_index = self.tree.index(selected)
         values = self.tree.item(selected, "values")
+
+        employee = self.employees[selected_index]
 
         if not values:
             messagebox.showwarning("Warning", "Select a row")
             return
 
-        confirm = messagebox.askyesno("Confirm", "Delete this model?")
+        confirm = messagebox.askyesno("Confirm", "Delete this employee?")
         if not confirm:
             return
 
-        employee_service.delete(values[0])
+        employee_service.delete(employee.id)
         self.load_employees()

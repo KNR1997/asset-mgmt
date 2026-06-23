@@ -152,12 +152,12 @@ class AccessoriesView:
         self.tree = ttk.Treeview(
             table_frame,
             columns=(
-                "Accessory Name", 
+                "Accessory Name",
                 "Category Name",
                 "Supplier Name",
-                "Model No.", 
-                "Min. QTY", 
-                "Total", 
+                "Model No.",
+                "Min. QTY",
+                "Total",
             ),
             show="headings",
             height=15
@@ -254,36 +254,56 @@ class AccessoriesView:
     def open_form(self, title, accessory: Optional[Accessory] = None):
         modal = tk.Toplevel()
         modal.title(title)
-        modal.geometry("350x400")
+        modal.geometry("350x450")
 
-        # Center the modal
         modal.transient(self.frame)
         modal.update_idletasks()
         modal.grab_set()
 
-        tk.Label(modal, text="Accessory Name").pack()
+        # Helper function to create required label
+        def create_label(parent, text, required=False):
+            frame = tk.Frame(parent)
+            frame.pack(pady=(10, 0))
+
+            label = tk.Label(frame, text=text)
+            label.pack(side=tk.LEFT)
+
+            if required:
+                asterisk = tk.Label(frame, text=" *", fg="red",
+                                    font=("Arial", 10, "bold"))
+                asterisk.pack(side=tk.LEFT)
+
+            return frame
+
+        # Accessory Name
+        create_label(modal, "Accessory Name", required=True)
         accessory_name_entry = tk.Entry(modal)
-        accessory_name_entry.pack()
+        accessory_name_entry.pack(fill=tk.X, padx=20)
 
-        tk.Label(modal, text="Category Name").pack()
+        # Category Name
+        create_label(modal, "Category Name")
         category_name_entry = tk.Entry(modal)
-        category_name_entry.pack()
+        category_name_entry.pack(fill=tk.X, padx=20)
 
-        tk.Label(modal, text="Supplier Name").pack()
+        # Supplier Name
+        create_label(modal, "Supplier Name")
         supplier_name_entry = tk.Entry(modal)
-        supplier_name_entry.pack()
+        supplier_name_entry.pack(fill=tk.X, padx=20)
 
-        tk.Label(modal, text="Model No.").pack()
+        # Model No.
+        create_label(modal, "Model No.")
         model_number_entry = tk.Entry(modal)
-        model_number_entry.pack()
+        model_number_entry.pack(fill=tk.X, padx=20)
 
-        tk.Label(modal, text="Min. Quantity").pack()
+        # Min. Quantity
+        create_label(modal, "Min. Quantity")
         min_qty_entry = tk.Entry(modal)
-        min_qty_entry.pack()
+        min_qty_entry.pack(fill=tk.X, padx=20)
 
-        tk.Label(modal, text="Total").pack()
+        # Total
+        create_label(modal, "Total")
         total_entry = tk.Entry(modal)
-        total_entry.pack()
+        total_entry.pack(fill=tk.X, padx=20)
 
         if accessory:
             accessory_name_entry.insert(0, accessory.accessoryName)
@@ -318,8 +338,8 @@ class AccessoriesView:
                         minQuantity=min_qty,
                         qunatity=total,
                     )
-                    # messagebox.showinfo(
-                    #     "Success", "Accessory updated successfully!")
+                    messagebox.showinfo(
+                        title, "Accessory updated successfully")
                 else:
                     service.insert(
                         accessoryName=accessory_name,
@@ -329,16 +349,46 @@ class AccessoriesView:
                         minQuantity=min_qty,
                         qunatity=total,
                     )
-                    # messagebox.showinfo(
-                    #     "Success", "Accessory added successfully!")
+                    messagebox.showinfo(title, "Accessory added successfully")
+                modal.destroy()
+                self.load_accessories()
             except Exception as e:
                 messagebox.showerror(
                     "Error", f"Failed to save accessory: {str(e)}")
 
-            modal.destroy()
-            self.load_accessories()
+        # Save and Cancel buttons
+        btn_frame = tk.Frame(modal)
+        btn_frame.pack(pady=20)
 
-        tk.Button(modal, text="Save", command=save).pack(pady=10)
+        tk.Button(
+            btn_frame,
+            text="💾 Save",
+            command=save,
+            bg="#2ecc71",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            padx=20,
+            pady=8,
+            relief="flat",
+            cursor="hand2"
+        ).pack(side="left", padx=(0, 10))
+
+        tk.Button(
+            btn_frame,
+            text="✖ Cancel",
+            command=modal.destroy,
+            bg="#e74c3c",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            padx=20,
+            pady=8,
+            relief="flat",
+            cursor="hand2"
+        ).pack(side="left")
+
+        # Bind keyboard shortcuts
+        modal.bind("<Return>", lambda e: save())
+        modal.bind("<Escape>", lambda e: modal.destroy())
 
     def on_double_click(self, event):
         selected = self.tree.focus()
@@ -356,28 +406,18 @@ class AccessoriesView:
 
     def delete_accessory(self):
         selected = self.tree.focus()
+        selected_index = self.tree.index(selected)
         values = self.tree.item(selected, "values")
 
+        accessory = self.accessories[selected_index]
+
         if not values:
-            messagebox.showwarning(
-                "Warning", "Please select a accessory to delete")
+            messagebox.showwarning("Warning", "Select a row")
             return
 
-        # Show accessory name in confirmation
-        accessory_name = values[1]
-        confirm = messagebox.askyesno(
-            "Confirm Delete",
-            f"Are you sure you want to delete accessory '{accessory_name}'?\n\nThis action cannot be undone.",
-            icon="warning"
-        )
-
+        confirm = messagebox.askyesno("Confirm", "Delete this accessory?")
         if not confirm:
             return
 
-        try:
-            service.delete(values[0])
-            messagebox.showinfo("Success", "Accessory deleted successfully!")
-            self.load_accessories()
-        except Exception as e:
-            messagebox.showerror(
-                "Error", f"Failed to delete accessory: {str(e)}")
+        service.delete(accessory.id)
+        self.load_accessories()

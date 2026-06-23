@@ -3,6 +3,85 @@ from models.repair import Repair
 
 DB_NAME = "assets.db"
 
+def get_all(keyword="") -> list[Repair]:
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+
+    if keyword:
+        cur.execute("""
+            SELECT 
+                repairs.id, 
+                repairs.repair_date, 
+                repairs.repair_cost,
+                repairs.status, 
+                repairs.description, 
+                repairs.notes, 
+                repairs.performed_by, 
+                repairs.warranty_covered,
+                assets.id,
+                assets.tag,
+                assets.serialNumber,
+                models.name,
+                categories.name,
+                checkouts.id
+            FROM repairs
+            LEFT JOIN assets ON repairs.asset_id = assets.id
+            LEFT JOIN models ON assets.model_id = models.id
+            LEFT JOIN categories ON models.category_id = categories.id
+            LEFT JOIN checkouts ON repairs.checkout_id = checkouts.id
+            WHERE assets.name LIKE ?
+        """, ('%' + keyword + '%',))
+    else:
+        cur.execute("""
+            SELECT 
+                repairs.id, 
+                repairs.repair_date, 
+                repairs.repair_cost,
+                repairs.status, 
+                repairs.description, 
+                repairs.notes, 
+                repairs.performed_by, 
+                repairs.warranty_covered,
+                assets.id,
+                assets.tag,
+                assets.serialNumber,
+                models.name,
+                categories.name,
+                checkouts.id
+            FROM repairs
+            LEFT JOIN assets ON repairs.asset_id = assets.id
+            LEFT JOIN models ON assets.model_id = models.id
+            LEFT JOIN categories ON models.category_id = categories.id
+            LEFT JOIN checkouts ON repairs.checkout_id = checkouts.id
+        """)
+
+    rows = cur.fetchall()
+    conn.close()
+
+    models = []
+
+    for row in rows:
+        models.append(
+            Repair(
+                id=row[0],
+                repair_date=row[1],
+                repair_cost=row[2],
+                status=row[3],
+                description=row[4],
+                notes=row[5],
+                performed_by=row[6],
+                warranty_covered=row[7],
+                asset_id=row[8],
+                asset_tag=row[9],
+                asset_serial_number=row[10],
+                asset_model_name=row[11],
+                asset_category_name=row[12],
+                checkout_id=row[13],
+            )
+        )
+
+    return models
+
 def insert(
     asset_id, 
     checkout_id, 
@@ -12,6 +91,7 @@ def insert(
     description,
     notes,
     performed_by,
+    warranty_covered,
 ):
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
@@ -26,8 +106,9 @@ def insert(
             description,
             notes,
             performed_by,
+            warranty_covered
         ) 
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         asset_id, 
         checkout_id, 
@@ -37,6 +118,7 @@ def insert(
         description,
         notes,
         performed_by,
+        warranty_covered,
     ))
 
     conn.commit()

@@ -55,7 +55,8 @@ def checkout_asset(
 
 def checkin_asset(
     asset_id, 
-    status, 
+    status,
+    checkin_date,
     return_notes
 ):
     conn = sqlite3.connect(DB_NAME)
@@ -78,7 +79,7 @@ def checkin_asset(
 
         checkout_id = checkout[0]
 
-        checkin_date = datetime.now().strftime("%Y-%m-%d")
+        # checkin_date = datetime.now().strftime("%Y-%m-%d")
 
         # Close checkout record
         cur.execute("""

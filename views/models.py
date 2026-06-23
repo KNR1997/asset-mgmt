@@ -156,7 +156,8 @@ class AssetModelsView:
                 # "ID",
                 "Name",
                 "Model No",
-                "Category"
+                "Category",
+                "Total"
             ),
             show="headings",
             height=15
@@ -166,11 +167,13 @@ class AssetModelsView:
         self.tree.heading("Name", text="Name")
         self.tree.heading("Model No", text="Model No")
         self.tree.heading("Category", text="Category")
+        self.tree.heading("Total", text="Total")
 
         # self.tree.column("ID", width=80, anchor="center")
         self.tree.column("Name", width=300, anchor="center")
         self.tree.column("Model No", width=300, anchor="center")
         self.tree.column("Category", width=300, anchor="center")
+        self.tree.column("Total", width=100, anchor="center")
 
         # Add scrollbar
         scrollbar = ttk.Scrollbar(
@@ -215,6 +218,7 @@ class AssetModelsView:
                     model.name,
                     model.modelNumber,
                     model.category_name,
+                    model.asset_count,
                 )
             )
 
@@ -336,7 +340,10 @@ class AssetModelsView:
 
     def delete_model(self):
         selected = self.tree.focus()
+        selected_index = self.tree.index(selected)
         values = self.tree.item(selected, "values")
+
+        model = self.models[selected_index]
 
         if not values:
             messagebox.showwarning("Warning", "Select a row")
@@ -346,5 +353,5 @@ class AssetModelsView:
         if not confirm:
             return
 
-        model_service.delete(values[0])
+        model_service.delete(model.id)
         self.load_models()

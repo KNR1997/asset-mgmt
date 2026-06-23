@@ -12,3 +12,4 @@ class Model:
     category_name: Optional[str]
     manufacturer_id: Optional[int]
     manufacturer_name: Optional[str]
+    asset_count: int

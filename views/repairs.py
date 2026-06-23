@@ -1,14 +1,15 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-from services import category_service as service
-from services import type_service as type_service
-from models.category import Category
-from typing import Optional
+from services import asset_service as asset_service
+from services import repairs_service as repairs_service
+from enums.asset_status import AssetStatus
+from datetime import datetime, timedelta
+from tkcalendar import DateEntry
 
 
-class CategoriesView:
+class RepairsView:
     def __init__(self, parent):
-        self.categories = []
+        self.broken_assets = []
         self.frame = tk.Frame(parent, bg="#f5f6fa")
         self.frame.pack(fill="both", expand=True)
 
@@ -18,7 +19,7 @@ class CategoriesView:
 
         tk.Label(
             header_frame,
-            text="📁 Categories",
+            text="🛠 Repairs",
             font=("Segoe UI", 20, "bold"),
             fg="#2c3e50",
             bg="#f5f6fa"
@@ -39,7 +40,7 @@ class CategoriesView:
         # Add Category button with icon
         self.add_btn = tk.Button(
             btn_frame,
-            text="➕ Add New",
+            text="➕ Repair Asset",
             command=self.open_add_modal,
             bg="#3498db",
             fg="white",
@@ -56,27 +57,6 @@ class CategoriesView:
             "<Enter>", lambda e: self.add_btn.config(bg="#2980b9"))
         self.add_btn.bind(
             "<Leave>", lambda e: self.add_btn.config(bg="#3498db"))
-
-        # Delete button with icon
-        self.delete_btn = tk.Button(
-            btn_frame,
-            text="🗑️ Delete Selected",
-            command=self.delete_category,
-            bg="#e74c3c",
-            fg="white",
-            font=("Segoe UI", 10, "bold"),
-            padx=15,
-            pady=8,
-            relief="flat",
-            cursor="hand2"
-        )
-        self.delete_btn.pack(side="left")
-
-        # Hover effect for Delete button
-        self.delete_btn.bind(
-            "<Enter>", lambda e: self.delete_btn.config(bg="#c0392b"))
-        self.delete_btn.bind(
-            "<Leave>", lambda e: self.delete_btn.config(bg="#e74c3c"))
 
         # Search frame (right side)
         search_frame = tk.Frame(top, bg="#f5f6fa")
@@ -152,21 +132,30 @@ class CategoriesView:
         self.tree = ttk.Treeview(
             table_frame,
             columns=(
-                # "ID",
-                "Name",
-                "Type"
+                "Asset Tag",
+                "Asset Name",
+                "Serial",
+                "Model",
+                "Category",
+                "Status",
             ),
             show="headings",
             height=15
         )
 
-        # self.tree.heading("ID", text="ID")
-        self.tree.heading("Name", text="Category Name")
-        self.tree.heading("Type", text="Type")
+        self.tree.heading("Asset Tag", text="Asset_Tag")
+        self.tree.heading("Asset Name", text="Asset_Name")
+        self.tree.heading("Serial", text="Serial")
+        self.tree.heading("Model", text="Model")
+        self.tree.heading("Category", text="Category")
+        self.tree.heading("Status", text="Status")
 
-        # self.tree.column("ID", width=80, anchor="center")
-        self.tree.column("Name", width=300, anchor="center")
-        self.tree.column("Type", width=300, anchor="center")
+        self.tree.column("Asset Tag", width=80, anchor="center")
+        self.tree.column("Asset Name", width=300, anchor="center")
+        self.tree.column("Serial", width=150, anchor="center")
+        self.tree.column("Model", width=150, anchor="center")
+        self.tree.column("Category", width=150, anchor="center")
+        self.tree.column("Status", width=200, anchor="center")
 
         # Add scrollbar
         scrollbar = ttk.Scrollbar(
@@ -194,63 +183,63 @@ class CategoriesView:
             pady=(0, 10)
         )
 
-        self.load_categories()
+        self.load_broken_assets()
 
-    def load_categories(self, keyword=""):
-        # Clear existing items
+    def load_broken_assets(self, keyword=""):
         for row in self.tree.get_children():
             self.tree.delete(row)
 
-        rows = service.get_all(keyword)
+        rows = asset_service.get_all_broken(keyword)
 
-        for category in rows:
+        for asset in rows:
             self.tree.insert(
                 "",
                 tk.END,
                 values=(
-                    # category.id,
-                    category.name,
-                    category.type_name,
+                    asset.tag,
+                    asset.name,
+                    asset.serial_number,
+                    asset.model_name,
+                    asset.category_name,
+                    self.get_status_display(asset.status),
                 )
             )
 
-        self.categories = rows
-
-        # Update status label
-        count = len(rows)
-        self.status_label.config(text=f"📊 Total categories: {count}")
+        self.broken_assets = rows
 
     def on_search(self, *args):
         keyword = self.search_var.get()
-        self.load_categories(keyword)
+        self.load_broken_assets(keyword)
 
-        # Show clear button if search has text
-        if keyword and not self.clear_btn.winfo_ismapped():
-            self.clear_btn.pack(side="left", padx=(0, 5))
-        elif not keyword and self.clear_btn.winfo_ismapped():
-            self.clear_btn.pack_forget()
+    def get_status_display(self, status):
+        status_map = {
+            "Ready to Deploy": "🟢 Ready to Deploy",
+            "Deployed": "🔵 Deployed",
+            "Broken": "🔴 Broken",
+            "Archived": "⚫ Archived",
+            "Checked Out": "🔵 Checked Out",
+        }
+
+        return status_map.get(status, status)
 
     def clear_search(self):
-        """Clear search entry"""
-        self.search_var.set("")
-        self.search_entry = self.clear_btn.master.winfo_children()[1]
-        self.search_entry.focus()
+        ...
 
     def open_add_modal(self):
-        self.open_form("Add Category")
+        self.open_form("Repair Asset")
 
-    def open_form(self, title, category: Optional[Category] = None):
+    def open_form(self, title):
+        selected = self.tree.focus()
+        selected_index = self.tree.index(selected)
+        broken_asset = self.broken_assets[selected_index]
+
         modal = tk.Toplevel()
         modal.title(title)
-        modal.geometry("400x300")
+        modal.geometry("350x450")
 
-        # Center the modal
         modal.transient(self.frame)
         modal.update_idletasks()
         modal.grab_set()
-
-        types = type_service.get_all()
-        type_map = {type.name: type.id for type in types}
 
         # Helper function to create required label
         def create_label(parent, text, required=False):
@@ -267,122 +256,113 @@ class CategoriesView:
 
             return frame
 
-        create_label(modal, "Category Name", required=True).pack()
-        name_entry = tk.Entry(modal)
-        name_entry.pack(fill=tk.X, padx=20)
+        info_frame = tk.Frame(modal)
+        info_frame.pack(pady=10, fill="x")
 
-        create_label(modal, "Type").pack()
-        type_combo = ttk.Combobox(
+        tk.Label(info_frame, text="Asset Tag:", font=("Arial", 10, "bold"))\
+            .grid(row=0, column=0, sticky="w", padx=10)
+
+        tk.Label(info_frame, text=broken_asset.tag or "-")\
+            .grid(row=0, column=1, sticky="w")
+
+        tk.Label(info_frame, text="Model Name:", font=("Arial", 10, "bold"))\
+            .grid(row=1, column=0, sticky="w", padx=10)
+
+        tk.Label(info_frame, text=broken_asset.model_name or "-")\
+            .grid(row=1, column=1, sticky="w")
+
+        tk.Label(info_frame, text="Category Name:", font=("Arial", 10, "bold"))\
+            .grid(row=2, column=0, sticky="w", padx=10)
+
+        tk.Label(info_frame, text=broken_asset.category_name or "-")\
+            .grid(row=2, column=1, sticky="w")
+
+        create_label(modal, "Repair Date", required=True)
+        date_frame = tk.Frame(modal)
+        date_frame.pack(fill=tk.X, padx=20)
+        # Default today
+        default_date = datetime.now()
+        repair_date_entry = DateEntry(
+            date_frame,
+            width=25,
+            background='darkblue',
+            foreground='white',
+            borderwidth=2,
+            year=default_date.year,
+            month=default_date.month,
+            day=default_date.day,
+            date_pattern='yyyy-mm-dd',  # Format: 2026-05-20
+            locale='en_US'
+        )
+        repair_date_entry.pack(fill=tk.X, pady=(0, 5))
+
+        create_label(modal, "Repair Cost", required=True)
+        repair_cost_entry = tk.Entry(modal)
+        repair_cost_entry.pack(fill=tk.X, padx=20)
+
+        create_label(modal, "Warranty Covered", required=True)
+        warranty_covered_combo = ttk.Combobox(
             modal,
-            values=list(type_map.keys()),
+            values=list({
+                "Yes", "No"
+            }),
             state="readonly"
         )
-        type_combo.pack(fill=tk.X, padx=20)
+        warranty_covered_combo.pack(fill=tk.X, padx=20)
 
-        if category:
-            name_entry.insert(0, category.name)
-            type_combo.set(category.type_name if category.type_name else "")
-            name_entry.focus()
+        create_label(modal, "Performed by", required=True)
+        performed_by_entry = tk.Entry(modal)
+        performed_by_entry.pack(fill=tk.X, padx=20)
+
+        create_label(modal, "Notes", required=True)
+        notes_entry = tk.Entry(modal)
+        notes_entry.pack(fill=tk.X, padx=20)
+
+        if not broken_asset:
+            ...
+            # name_entry.insert(0, broken_asset.name)
+            # url_entry.insert(0, manufacturer.url)
+            # support_url_entry.insert(0, manufacturer.supportURL)
 
         def save():
-            name = name_entry.get().strip()
-            selected_type = type_combo.get()
+            repair_date = repair_date_entry.get()
+            repair_cost = repair_cost_entry.get()
+            notes = notes_entry.get()
+            warranty_covered = warranty_covered_combo.get()
+            performed_by = performed_by_entry.get()
 
-            if not name:
-                messagebox.showwarning(
-                    "Warning", "Please enter a category name")
-                name_entry.focus()
+            if not repair_cost:
+                messagebox.showwarning("Warning", "Enter repair cost")
                 return
-
-            if not selected_type:
-                messagebox.showwarning("Warning", "Please select a type")
-                return
-
-            type_id = type_map[selected_type]
 
             try:
-                if category:
-                    service.update(
-                        category_id=category.id,
-                        name=name,
-                        type_id=type_id,
-                    )
-                    messagebox.showinfo(title, "Category updated successfully")
-                else:
-                    service.insert(
-                        name=name,
-                        type_id=type_id,
-                        description='',
-                    )
-                    messagebox.showinfo(title, "Category created successfully")
+                repairs_service.insert(
+                    asset_id=broken_asset.id,
+                    checkout_id=1,
+                    repair_date=repair_date,
+                    repair_cost=repair_cost,
+                    status='Completed',
+                    description='',
+                    notes=notes,
+                    performed_by=performed_by,
+                    warranty_covered=warranty_covered,
+                )
+
+                asset_service.update_status(
+                    asset_id=broken_asset.id,
+                    status=AssetStatus.READY_TO_DEPLOY,
+                )
                 modal.destroy()
-                self.load_categories()
             except Exception as e:
                 messagebox.showerror(
                     "Error", f"Failed to save category: {str(e)}")
 
-        # Save and Cancel buttons
-        btn_frame = tk.Frame(modal)
-        btn_frame.pack(pady=20)
+            messagebox.showinfo(
+                "Success", "Asset Ready to Use!")
 
-        tk.Button(
-            btn_frame,
-            text="💾 Save",
-            command=save,
-            bg="#2ecc71",
-            fg="white",
-            font=("Arial", 10, "bold"),
-            padx=20,
-            pady=8,
-            relief="flat",
-            cursor="hand2"
-        ).pack(side="left", padx=(0, 10))
+            self.load_broken_assets()
 
-        tk.Button(
-            btn_frame,
-            text="✖ Cancel",
-            command=modal.destroy,
-            bg="#e74c3c",
-            fg="white",
-            font=("Arial", 10, "bold"),
-            padx=20,
-            pady=8,
-            relief="flat",
-            cursor="hand2"
-        ).pack(side="left")
-
-        # Bind keyboard shortcuts
-        modal.bind("<Return>", lambda e: save())
-        modal.bind("<Escape>", lambda e: modal.destroy())
+        tk.Button(modal, text="Save", command=save).pack(pady=10)
 
     def on_double_click(self, event):
-        selected = self.tree.focus()
-        if not selected:
-            return
-
-        selected_index = self.tree.index(selected)
-        values = self.tree.item(selected, "values")
-
-        if selected_index < len(self.categories):
-            category = self.categories[selected_index]
-
-            if values:
-                self.open_form("Edit Category", category)
-
-    def delete_category(self):
-        selected = self.tree.focus()
-        selected_index = self.tree.index(selected)
-        values = self.tree.item(selected, "values")
-
-        category = self.categories[selected_index]
-
-        if not values:
-            messagebox.showwarning("Warning", "Select a row")
-            return
-
-        confirm = messagebox.askyesno("Confirm", "Delete this category?")
-        if not confirm:
-            return
-
-        service.delete(category.id)
-        self.load_categories()
+        ...

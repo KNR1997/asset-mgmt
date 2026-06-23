@@ -58,6 +58,18 @@ def get_all(keyword="") -> list[Manufacturer]:
     return manufacturers
 
 
+def get_by_name(name):
+    """Get manufacturer by name"""
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM manufacturers WHERE name = ?", (name,))
+    result = cur.fetchone()
+    conn.close()
+    return dict(result) if result else None
+
+
 def insert(
     name,
     url,
@@ -67,6 +79,10 @@ def insert(
     supportEmail,
     notes
 ):
+    # Validate uniqueness before insert
+    if get_by_name(name):
+        raise ValueError(f"Manufacturer with name '{name}' already exists")
+
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
@@ -96,7 +112,7 @@ def insert(
 
 
 def update(
-    manufacturer_id, 
+    manufacturer_id,
     name,
     url,
     supportURL,
@@ -105,6 +121,11 @@ def update(
     supportEmail,
     notes
 ):
+    # When updating, exclude the current asset from uniqueness check
+    existing_by_name = get_by_name(name)
+    if existing_by_name and existing_by_name['id'] != manufacturer_id:
+        raise ValueError(f"Manufacturer with name '{name}' already exists")
+
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
@@ -119,7 +140,7 @@ def update(
             notes=? 
         WHERE id=?
     """, (
-        name, 
+        name,
         url,
         supportURL,
         supportPhone,

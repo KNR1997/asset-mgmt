@@ -6,3 +6,5 @@ class Employee:
     id: int
     name: str
     department: str
+    email: str
+    contact_number: str
