@@ -419,16 +419,16 @@ class Dashboard:
                 "command": self.show_assets,
                 "roles": ["super_admin", "admin"]
             },
-            {
-                "text": "📜 Licenses",
-                "command": self.show_licenses,
-                "roles": ["super_admin"]
-            },
-            {
-                "text": "🖱️ Accessories",
-                "command": self.show_accessories,
-                "roles": ["super_admin"]
-            },
+            # {
+            #     "text": "📜 Licenses",
+            #     "command": self.show_licenses,
+            #     "roles": ["super_admin"]
+            # },
+            # {
+            #     "text": "🖱️ Accessories",
+            #     "command": self.show_accessories,
+            #     "roles": ["super_admin"]
+            # },
             {
                 "text": "👥 Employees",
                 "command": self.show_employees,

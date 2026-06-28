@@ -52,10 +52,10 @@ class DashboardView:
         # Card data
         cards_data = [
             {"title": "Assets", "count": asset_count, "color": "#3498db", "icon": "💻"},
-            {"title": "Licenses", "count": license_count, "color": "#2ecc71", "icon": "📜"},
-            {"title": "Accessories", "count": accessory_count, "color": "#e67e22", "icon": "🖱️"},
-            {"title": "Consumables", "count": "3", "color": "#9b59b6", "icon": "📦"},
-            {"title": "Components", "count": "4", "color": "#1abc9c", "icon": "🔧"},
+            # {"title": "Licenses", "count": license_count, "color": "#2ecc71", "icon": "📜"},
+            # {"title": "Accessories", "count": accessory_count, "color": "#e67e22", "icon": "🖱️"},
+            # {"title": "Consumables", "count": "3", "color": "#9b59b6", "icon": "📦"},
+            # {"title": "Components", "count": "4", "color": "#1abc9c", "icon": "🔧"},
             {"title": "People", "count": employee_count, "color": "#e74c3c", "icon": "👥"}
         ]
 
