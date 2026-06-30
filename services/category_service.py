@@ -8,27 +8,25 @@ def get_all(keyword="") -> list[Category]:
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
+    base_query = """
+        SELECT
+            categories.id,
+            categories.name,
+            categories.description,
+            types.name
+        FROM categories
+        LEFT JOIN types ON categories.type_id = types.id
+    """
+
+    params = ()
+
     if keyword:
-        cur.execute("""
-            SELECT
-                categories.id,
-                categories.name,
-                categories.description,
-                types.name
-            FROM categories
-            LEFT JOIN types ON categories.type_id = types.id
-            WHERE name LIKE ?
-        """, ('%' + keyword + '%',))
-    else:
-        cur.execute("""
-            SELECT
-                categories.id,
-                categories.name,
-                categories.description,
-                types.name
-            FROM categories
-            LEFT JOIN types ON categories.type_id = types.id
-        """)
+        base_query += """
+            WHERE categories.name LIKE ?
+        """
+        params = ('%' + keyword + '%',)
+
+    cur.execute(base_query, params)
 
     rows = cur.fetchall()
     conn.close()
@@ -125,3 +123,15 @@ def delete(cat_id):
 
     conn.commit()
     conn.close()
+
+def count():
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+
+    cur.execute("SELECT COUNT(*) FROM categories")
+
+    total = cur.fetchone()[0]
+
+    conn.close()
+
+    return total

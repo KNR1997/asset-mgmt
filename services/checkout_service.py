@@ -7,6 +7,7 @@ DB_NAME = "assets.db"
 
 def checkout_asset(
     asset_id,
+    asset_name,
     employee_id,
     expected_checkin_date,
     checkout_notes
@@ -46,8 +47,12 @@ def checkout_asset(
         1
     ))
 
-    cur.execute("UPDATE assets SET status=? WHERE id=?",
-                (AssetStatus.DEPLOYED, asset_id))
+    cur.execute("UPDATE assets SET name=?, status=? WHERE id=?",
+        (
+        asset_name, 
+        AssetStatus.DEPLOYED, 
+        asset_id
+    ))
 
     conn.commit()
     conn.close()

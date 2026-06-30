@@ -455,8 +455,13 @@ class Dashboard:
                 "roles": ["super_admin", "admin"]
             },
             {
-                "text": "🛠 Maintenance Report",
+                "text": "🗒️ Maintenance Report",
                 "command": self.show_maintenance_report,
+                "roles": ["super_admin", "admin"]
+            },
+            {
+                "text": "🗒️ Asset Movement Report",
+                "command": self.show_asset_movement_report,
                 "roles": ["super_admin", "admin"]
             }
         ]
@@ -695,6 +700,14 @@ class Dashboard:
             MaintenanceReportView(self.content)
         except ImportError:
             self.show_placeholder("MaintenanceReport View")
+
+    def show_asset_movement_report(self):
+        self.clear_content()
+        try:
+            from views.asset_movement_report import AssetMovementReportView
+            AssetMovementReportView(self.content)
+        except ImportError:
+            self.show_placeholder("AssetMovementReportView View")
 
     def logout(self):
         self.root.destroy()

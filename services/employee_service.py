@@ -8,27 +8,25 @@ def get_all(keyword="") -> list[Employee]:
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
+    base_query = """
+        SELECT
+            id, 
+            name, 
+            department,
+            email,
+            contactNumber
+        FROM employees
+    """
+
+    params = ()
+
     if keyword:
-        cur.execute("""
-            SELECT
-                id, 
-                name, 
-                department,
-                email,
-                contactNumber
-            FROM employees
-            WHERE name LIKE ?
-        """, ('%' + keyword + '%',))
-    else:
-        cur.execute("""
-            SELECT
-                id, 
-                name, 
-                department,
-                email,
-                contactNumber
-            FROM employees
-        """)
+        base_query += """
+            WHERE employees.name LIKE ?
+        """
+        params = ('%' + keyword + '%',)
+
+    cur.execute(base_query, params)
 
     rows = cur.fetchall()
     conn.close()
@@ -77,7 +75,7 @@ def get_by_contact_number(contact_number):
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     
-    cur.execute("SELECT * FROM employees WHERE contact_number = ?", (contact_number,))
+    cur.execute("SELECT * FROM employees WHERE contactNumber = ?", (contact_number,))
     result = cur.fetchone()
     conn.close()
     return dict(result) if result else None

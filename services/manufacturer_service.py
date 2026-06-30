@@ -8,33 +8,28 @@ def get_all(keyword="") -> list[Manufacturer]:
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
+    base_query = """
+        SELECT
+            id, 
+            name, 
+            url,
+            supportURL,
+            supportPhone,
+            warrantyLookupUrl,
+            supportEmail,
+            notes
+        FROM manufacturers
+    """
+
+    params = ()
+
     if keyword:
-        cur.execute("""
-            SELECT
-                id, 
-                name, 
-                url,
-                supportURL,
-                supportPhone,
-                warrantyLookupUrl,
-                supportEmail,
-                notes
-            FROM manufacturers
-            WHERE name LIKE ?
-        """, ('%' + keyword + '%',))
-    else:
-        cur.execute("""
-            SELECT
-                id, 
-                name, 
-                url,
-                supportURL,
-                supportPhone,
-                warrantyLookupUrl,
-                supportEmail,
-                notes
-            FROM manufacturers
-        """)
+        base_query += """
+            WHERE manufacturers.name LIKE ?
+        """
+        params = ('%' + keyword + '%',)
+
+    cur.execute(base_query, params)
 
     rows = cur.fetchall()
     conn.close()
@@ -162,3 +157,15 @@ def delete(manufacturer_id):
 
     conn.commit()
     conn.close()
+
+def count():
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+
+    cur.execute("SELECT COUNT(*) FROM manufacturers")
+
+    total = cur.fetchone()[0]
+
+    conn.close()
+
+    return total

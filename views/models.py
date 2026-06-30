@@ -37,7 +37,7 @@ class AssetModelsView:
         btn_frame = tk.Frame(top, bg="#f5f6fa")
         btn_frame.pack(side="left")
 
-        # Add Category button with icon
+        # Add Model button with icon
         self.add_btn = tk.Button(
             btn_frame,
             text="➕ Add New",
@@ -154,8 +154,8 @@ class AssetModelsView:
             table_frame,
             columns=(
                 # "ID",
-                "Name",
-                "Model No",
+                "Model Name",
+                "Model Number",
                 "Category",
                 "Total"
             ),
@@ -164,14 +164,14 @@ class AssetModelsView:
         )
 
         # self.tree.heading("ID", text="ID")
-        self.tree.heading("Name", text="Name")
-        self.tree.heading("Model No", text="Model No")
+        self.tree.heading("Model Name", text="Model Name")
+        self.tree.heading("Model Number", text="Model Number")
         self.tree.heading("Category", text="Category")
         self.tree.heading("Total", text="Total")
 
         # self.tree.column("ID", width=80, anchor="center")
-        self.tree.column("Name", width=300, anchor="center")
-        self.tree.column("Model No", width=300, anchor="center")
+        self.tree.column("Model Name", width=300, anchor="center")
+        self.tree.column("Model Number", width=300, anchor="center")
         self.tree.column("Category", width=300, anchor="center")
         self.tree.column("Total", width=100, anchor="center")
 
@@ -228,16 +228,25 @@ class AssetModelsView:
         keyword = self.search_var.get()
         self.load_models(keyword)
 
+        # Show clear button if search has text
+        if keyword and not self.clear_btn.winfo_ismapped():
+            self.clear_btn.pack(side="left", padx=(0, 5))
+        elif not keyword and self.clear_btn.winfo_ismapped():
+            self.clear_btn.pack_forget()
+
     def clear_search(self):
-        ...
+        """Clear search entry"""
+        self.search_var.set("")
+        self.search_entry = self.clear_btn.master.winfo_children()[1]
+        self.search_entry.focus()
 
     def open_add_modal(self):
-        self.open_form("Add Category")
+        self.open_form("Add Model")
 
     def open_form(self, title, model: Optional[Model] = None):
         modal = tk.Toplevel()
         modal.title(title)
-        modal.geometry("350x300")
+        modal.geometry("400x450")
 
         modal.transient(self.frame)
         modal.update_idletasks()
@@ -249,33 +258,48 @@ class AssetModelsView:
         manufacturers = manufacturer_service.get_all()
         manufacturer_map = {m.name: m.id for m in manufacturers}
 
-        tk.Label(modal, text="Model Name").pack()
+        # Helper function to create required label
+        def create_label(parent, text, required=False):
+            frame = tk.Frame(parent)
+            frame.pack(pady=(10, 0))
+
+            label = tk.Label(frame, text=text)
+            label.pack(side=tk.LEFT)
+
+            if required:
+                asterisk = tk.Label(frame, text=" *", fg="red",
+                                    font=("Arial", 10, "bold"))
+                asterisk.pack(side=tk.LEFT)
+
+            return frame
+
+        create_label(modal, "Model Name", required=True).pack()
         name_entry = tk.Entry(modal)
-        name_entry.pack()
+        name_entry.pack(fill=tk.X, padx=20)
 
-        tk.Label(modal, text="Model Number").pack()
+        create_label(modal, "Model Number").pack()
         model_number_entry = tk.Entry(modal)
-        model_number_entry.pack()
+        model_number_entry.pack(fill=tk.X, padx=20)
 
-        tk.Label(modal, text="Description").pack()
+        create_label(modal, "Description").pack()
         desc_entry = tk.Entry(modal)
-        desc_entry.pack()
+        desc_entry.pack(fill=tk.X, padx=20)
 
-        tk.Label(modal, text="Category").pack()
+        create_label(modal, "Category", required=True).pack()
         category_combo = ttk.Combobox(
             modal,
             values=list(category_map.keys()),
             state="readonly"
         )
-        category_combo.pack()
+        category_combo.pack(fill=tk.X, padx=20)
 
-        tk.Label(modal, text="Manufacturer").pack()
+        create_label(modal, "Manufacturer", required=True).pack()
         manufacturer_combo = ttk.Combobox(
             modal,
             values=list(manufacturer_map.keys()),
             state="readonly"
         )
-        manufacturer_combo.pack()
+        manufacturer_combo.pack(fill=tk.X, padx=20)
 
         if model:
             name_entry.insert(0, model.name)
@@ -291,42 +315,88 @@ class AssetModelsView:
                 model.manufacturer_name if model.manufacturer_name else "")
 
         def save():
+            name = name_entry.get().strip()
+            model_number = model_number_entry.get()
+            description = desc_entry.get()
             selected_category = category_combo.get()
             selected_manufacturer = manufacturer_combo.get()
+
+            if not name:
+                messagebox.showwarning(
+                    "Warning", "Please enter a model name")
+                name_entry.focus()
+                return
 
             if not selected_category:
                 messagebox.showwarning("Warning", "Select a category")
                 return
 
+            if not selected_manufacturer:
+                messagebox.showwarning("Warning", "Select a manufacturer")
+                return
+
             category_id = category_map[selected_category]
             manufacturer_id = manufacturer_map[selected_manufacturer]
 
-            name = name_entry.get()
-            model_number = model_number_entry.get()
-            description = name_entry.get()
+            try:
+                if model:
+                    model_service.update(
+                        model_id=model.id,
+                        name=name,
+                        modelNumber=model_number,
+                        description=description,
+                        category_id=category_id,
+                        manufacturer_id=manufacturer_id,
+                    )
+                    messagebox.showinfo(title, "Model updated successfully")
+                else:
+                    model_service.insert(
+                        name=name,
+                        modelNumber=model_number,
+                        description=description,
+                        category_id=category_id,
+                        manufacturer_id=manufacturer_id,
+                    )
+                    messagebox.showinfo(title, "Model updated successfully")
+                modal.destroy()
+                self.load_models()
+            except Exception as e:
+                messagebox.showerror(
+                    "Error", f"Failed to save model: {str(e)}")
 
-            if model:
-                model_service.update(
-                    model_id=model.id,
-                    name=name,
-                    modelNumber=model_number,
-                    description=description,
-                    category_id=category_id,
-                    manufacturer_id=manufacturer_id,
-                )
-            else:
-                model_service.insert(
-                    name=name,
-                    modelNumber=model_number,
-                    description=description,
-                    category_id=category_id,
-                    manufacturer_id=manufacturer_id,
-                )
+        # Save and Cancel buttons
+        btn_frame = tk.Frame(modal)
+        btn_frame.pack(pady=20)
 
-            modal.destroy()
-            self.load_models()
+        tk.Button(
+            btn_frame,
+            text="💾 Save",
+            command=save,
+            bg="#2ecc71",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            padx=20,
+            pady=8,
+            relief="flat",
+            cursor="hand2"
+        ).pack(side="left", padx=(0, 10))
 
-        tk.Button(modal, text="Save", command=save).pack(pady=10)
+        tk.Button(
+            btn_frame,
+            text="✖ Cancel",
+            command=modal.destroy,
+            bg="#e74c3c",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            padx=20,
+            pady=8,
+            relief="flat",
+            cursor="hand2"
+        ).pack(side="left")
+
+        # Bind keyboard shortcuts
+        modal.bind("<Return>", lambda e: save())
+        modal.bind("<Escape>", lambda e: modal.destroy())
 
     def on_double_click(self, event):
         selected = self.tree.focus()

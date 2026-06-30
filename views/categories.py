@@ -242,7 +242,7 @@ class CategoriesView:
     def open_form(self, title, category: Optional[Category] = None):
         modal = tk.Toplevel()
         modal.title(title)
-        modal.geometry("400x300")
+        modal.geometry("350x200")
 
         # Center the modal
         modal.transient(self.frame)
@@ -271,7 +271,7 @@ class CategoriesView:
         name_entry = tk.Entry(modal)
         name_entry.pack(fill=tk.X, padx=20)
 
-        create_label(modal, "Type").pack()
+        create_label(modal, "Type", required=True).pack()
         type_combo = ttk.Combobox(
             modal,
             values=list(type_map.keys()),

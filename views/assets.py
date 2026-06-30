@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-# from utils.toast import success
+from utils.asset.status_with_icon import status_with_icon
 from services import asset_service as asset_service
 from services import model_service as model_service
 from services import employee_service as employee_service
@@ -66,7 +66,7 @@ class AssetsView:
         # Add Checkout button with icon
         self.checkout_btn = tk.Button(
             btn_frame,
-            text="➕ Checkout",
+            text="🔺 Checkout",
             command=self.open_checkout_modal,
             bg="#9412c7",
             fg="white",
@@ -87,7 +87,7 @@ class AssetsView:
         # Add Checkin button with icon
         self.checkin_btn = tk.Button(
             btn_frame,
-            text="➕ Checkin",
+            text="🔻 Checkin",
             command=self.open_checkin_modal,
             bg="#4819ca",
             fg="white",
@@ -154,6 +154,19 @@ class AssetsView:
         )
         search_entry.pack(side="left", padx=5, pady=5)
 
+        # Clear search button (appears when there's text)
+        self.clear_btn = tk.Button(
+            search_frame,
+            text="✖",
+            font=("Segoe UI", 9),
+            bg="#f5f6fa",
+            fg="#95a5a6",
+            relief="flat",
+            cursor="hand2",
+            command=self.clear_search,
+            padx=5
+        )
+
         # Status Filter
         self.status_filter_var = tk.StringVar(value="All")
 
@@ -179,19 +192,6 @@ class AssetsView:
 
         status_combo.pack(side="left", padx=5)
         status_combo.bind("<<ComboboxSelected>>", self.on_filter_change)
-
-        # Clear search button (appears when there's text)
-        self.clear_btn = tk.Button(
-            search_frame,
-            text="✖",
-            font=("Segoe UI", 9),
-            bg="#f5f6fa",
-            fg="#95a5a6",
-            relief="flat",
-            cursor="hand2",
-            command=self.clear_search,
-            padx=5
-        )
 
         # Bind focus effects for search entry
         search_entry.bind("<FocusIn>", lambda e: search_entry.config(
@@ -228,7 +228,7 @@ class AssetsView:
             columns=(
                 "Asset Tag",
                 "Asset Name",
-                "Serial",
+                "Serial Number",
                 "Model",
                 "Category",
                 "Status",
@@ -238,9 +238,9 @@ class AssetsView:
             height=15
         )
 
-        self.tree.heading("Asset Tag", text="Asset_Tag")
-        self.tree.heading("Asset Name", text="Asset_Name")
-        self.tree.heading("Serial", text="Serial")
+        self.tree.heading("Asset Tag", text="Asset Tag")
+        self.tree.heading("Asset Name", text="Asset Name")
+        self.tree.heading("Serial Number", text="Serial Number")
         self.tree.heading("Model", text="Model")
         self.tree.heading("Category", text="Category")
         self.tree.heading("Status", text="Status")
@@ -248,7 +248,7 @@ class AssetsView:
 
         self.tree.column("Asset Tag", width=80, anchor="center")
         self.tree.column("Asset Name", width=300, anchor="center")
-        self.tree.column("Serial", width=150, anchor="center")
+        self.tree.column("Serial Number", width=150, anchor="center")
         self.tree.column("Model", width=150, anchor="center")
         self.tree.column("Category", width=150, anchor="center")
         self.tree.column("Status", width=200, anchor="center")
@@ -282,55 +282,6 @@ class AssetsView:
 
         self.load_assets()
 
-        # # Top section (buttons + search)
-        # top = tk.Frame(self.frame)
-        # top.pack(fill="x", padx=10)
-
-        # tk.Button(top, text="Add Asset", command=self.open_add_modal)\
-        #     .pack(side="left", padx=5)
-
-        # tk.Button(top, text="Checkout Asset", command=self.open_checkout_modal)\
-        #     .pack(side="left", padx=5)
-
-        # tk.Button(top, text="Checkin Asset", command=self.open_checkin_modal)\
-        #     .pack(side="left", padx=5)
-
-        # tk.Button(top, text="Delete Selected", command=self.delete_asset)\
-        #     .pack(side="left", padx=5)
-
-        # # Search field (right aligned)
-        # tk.Label(top, text="Search:").pack(side="right", padx=5)
-
-        # self.search_var = tk.StringVar()
-        # self.search_var.trace("w", self.on_search)
-
-        # search_entry = tk.Entry(top, textvariable=self.search_var)
-        # search_entry.pack(side="right", padx=5)
-
-        # # Table
-        # self.tree = ttk.Treeview(
-        #     self.frame,
-        #     columns=("Asset Tag", "Asset Name", "Serial",
-        #              "Model", "Category", "Status"),
-        #     show="headings"
-        # )
-
-        # self.tree.heading("Asset Tag", text="Asset_Tag")
-        # self.tree.heading("Asset Name", text="Asset_Name")
-        # self.tree.heading("Serial", text="Serial")
-        # self.tree.heading("Model", text="Model")
-        # self.tree.heading("Category", text="Category")
-        # self.tree.heading("Status", text="Status")
-
-        # # self.tree.column("Asset_Tag", width=50)
-
-        # self.tree.pack(fill="both", expand=True)
-
-        # # Double click to edit
-        # self.tree.bind("<Double-1>", self.on_double_click)
-
-        # self.load_assets()
-
     def on_filter_change(self, event=None):
         keyword = self.search_var.get()
         status = self.status_filter_var.get()
@@ -353,7 +304,7 @@ class AssetsView:
                     asset.serial_number,
                     asset.model_name,
                     asset.category_name,
-                    self.get_status_display(asset.status),
+                    status_with_icon(asset.status),
                     asset.current_checkout_employee_name,
                 )
             )
@@ -365,19 +316,15 @@ class AssetsView:
         self.status_filter_var.set("All")
         self.load_assets()
 
-    def get_status_display(self, status):
-        status_map = {
-            "Ready to Deploy": "🟢 Ready to Deploy",
-            "Deployed": "🔵 Deployed",
-            "Broken": "🔴 Broken",
-            "Archived": "⚫ Archived",
-            "Checked Out": "🔵 Checked Out",
-        }
-
-        return status_map.get(status, status)
-
     def on_search(self, *args):
-        self.on_filter_change()
+        keyword = self.search_var.get()
+        self.load_assets(keyword)
+
+        # Show clear button if search has text
+        if keyword and not self.clear_btn.winfo_ismapped():
+            self.clear_btn.pack(side="left", padx=(0, 5))
+        elif not keyword and self.clear_btn.winfo_ismapped():
+            self.clear_btn.pack_forget()
 
     def open_add_modal(self):
         self.open_form("Add Asset")
@@ -630,8 +577,8 @@ class AssetsView:
             .grid(row=1, column=1, sticky="w")
 
         # Asset Name (read-only since it's checkout)
-        create_label(modal, "Asset Name")
-        name_entry = tk.Entry(modal, state="readonly")
+        create_label(modal, "Asset Name", required=True)
+        name_entry = tk.Entry(modal)
         name_entry.insert(0, asset.name)
         name_entry.pack(fill=tk.X, padx=20)
 
@@ -730,7 +677,13 @@ class AssetsView:
         notes_text.pack(fill=tk.X, padx=20)
 
         def save():
+            name = name_entry.get().strip()
             selected_employee = employee_combo.get()
+
+            if not name:
+                messagebox.showwarning(
+                    "Warning", "Please a name for the Asset")
+                return
 
             if not selected_employee:
                 messagebox.showwarning("Warning", "Please select an employee")
@@ -751,6 +704,7 @@ class AssetsView:
             try:
                 checkout_service.checkout_asset(
                     asset_id=asset.id,
+                    asset_name=name,
                     employee_id=employee_id,
                     expected_checkin_date=date_str,
                     checkout_notes=checkout_notes,
@@ -782,6 +736,18 @@ class AssetsView:
 
         if asset.status == AssetStatus.BROKEN:
             messagebox.showwarning("Warning", "Asset is broken")
+            return
+
+        if asset.status == AssetStatus.LOST_STOLEN:
+            messagebox.showwarning("Warning", "Asset is Lost or Stolen")
+            return
+
+        if asset.status == AssetStatus.ARCHIVED:
+            messagebox.showwarning("Warning", "Asset is Archived")
+            return
+
+        if asset.status == AssetStatus.PENDING:
+            messagebox.showwarning("Warning", "Asset is Pending")
             return
 
         self.open_checkin_form("Checkin Asset", asset)

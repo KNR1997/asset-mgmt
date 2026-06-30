@@ -3,65 +3,63 @@ from models.repair import Repair
 
 DB_NAME = "assets.db"
 
-def get_all(keyword="") -> list[Repair]:
+def get_all(keyword="", from_date="", to_date="") -> list[Repair]:
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
+    base_query = """
+        SELECT 
+            repairs.id, 
+            repairs.repair_date, 
+            repairs.repair_cost,
+            repairs.status, 
+            repairs.description, 
+            repairs.notes, 
+            repairs.performed_by, 
+            repairs.warranty_covered,
+            assets.id,
+            assets.tag,
+            assets.serialNumber,
+            models.name,
+            categories.name,
+            checkouts.id
+        FROM repairs
+        LEFT JOIN assets ON repairs.asset_id = assets.id
+        LEFT JOIN models ON assets.model_id = models.id
+        LEFT JOIN categories ON models.category_id = categories.id
+        LEFT JOIN checkouts ON repairs.checkout_id = checkouts.id
+    """
+
+    conditions = []
+    params = []
+
     if keyword:
-        cur.execute("""
-            SELECT 
-                repairs.id, 
-                repairs.repair_date, 
-                repairs.repair_cost,
-                repairs.status, 
-                repairs.description, 
-                repairs.notes, 
-                repairs.performed_by, 
-                repairs.warranty_covered,
-                assets.id,
-                assets.tag,
-                assets.serialNumber,
-                models.name,
-                categories.name,
-                checkouts.id
-            FROM repairs
-            LEFT JOIN assets ON repairs.asset_id = assets.id
-            LEFT JOIN models ON assets.model_id = models.id
-            LEFT JOIN categories ON models.category_id = categories.id
-            LEFT JOIN checkouts ON repairs.checkout_id = checkouts.id
-            WHERE assets.name LIKE ?
-        """, ('%' + keyword + '%',))
-    else:
-        cur.execute("""
-            SELECT 
-                repairs.id, 
-                repairs.repair_date, 
-                repairs.repair_cost,
-                repairs.status, 
-                repairs.description, 
-                repairs.notes, 
-                repairs.performed_by, 
-                repairs.warranty_covered,
-                assets.id,
-                assets.tag,
-                assets.serialNumber,
-                models.name,
-                categories.name,
-                checkouts.id
-            FROM repairs
-            LEFT JOIN assets ON repairs.asset_id = assets.id
-            LEFT JOIN models ON assets.model_id = models.id
-            LEFT JOIN categories ON models.category_id = categories.id
-            LEFT JOIN checkouts ON repairs.checkout_id = checkouts.id
-        """)
+            conditions.append("assets.tag LIKE ?")
+            params.append('%' + keyword + '%')
+
+    if from_date:
+            conditions.append("repairs.repair_date >= ?")
+            params.append(from_date)
+
+    if to_date:
+        conditions.append("repairs.repair_date <= ?")
+        params.append(to_date)
+
+    if conditions:
+        base_query += " WHERE " + " AND ".join(conditions)
+
+# Add ORDER BY to show latest repairs first
+    base_query += " ORDER BY repairs.repair_date DESC"
+
+    cur.execute(base_query, params)
 
     rows = cur.fetchall()
     conn.close()
 
-    models = []
+    repairs = []
 
     for row in rows:
-        models.append(
+        repairs.append(
             Repair(
                 id=row[0],
                 repair_date=row[1],
@@ -80,7 +78,7 @@ def get_all(keyword="") -> list[Repair]:
             )
         )
 
-    return models
+    return repairs
 
 def insert(
     asset_id, 

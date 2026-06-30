@@ -49,7 +49,7 @@ def setup():
     cur.execute("""
     CREATE TABLE IF NOT EXISTS types (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT
+        name TEXT UNIQUE
     )
     """)
 
@@ -57,10 +57,7 @@ def setup():
     cur.execute("""
     INSERT OR IGNORE INTO types (name)
     VALUES
-        ('Asset'),
-        ('License'),
-        ('Accessory'),
-        ('Consumable')
+        ('Asset')
     """)
 
     # Categories

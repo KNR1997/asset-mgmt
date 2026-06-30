@@ -8,21 +8,22 @@ def get_all(keyword="") -> list[Type]:
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
+    base_query = """
+        SELECT
+            id, 
+            name 
+        FROM types
+    """
+
+    params = ()
+
     if keyword:
-        cur.execute("""
-            SELECT
-                id, 
-                name
-            FROM types
-            WHERE name LIKE ?
-        """, ('%' + keyword + '%',))
-    else:
-        cur.execute("""
-            SELECT
-                id, 
-                name 
-            FROM types
-        """)
+        base_query += """
+            WHERE types.name LIKE ?
+        """
+        params = ('%' + keyword + '%',)
+
+    cur.execute(base_query, params)
 
     rows = cur.fetchall()
     conn.close()

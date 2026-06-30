@@ -3,6 +3,9 @@ from services import asset_service as asset_service
 from services import employee_service as employee_service
 from services import license_service as license_service
 from services import accessory_service as accessory_service
+from services import manufacturer_service as manufacturer_service
+from services import category_service as category_service
+from services import model_service as model_service
 
 
 class DashboardView:
@@ -48,10 +51,17 @@ class DashboardView:
         license_count = license_service.count()
         license_count = license_service.count()
         accessory_count = accessory_service.count()
+        manufacturer_count = manufacturer_service.count()
+        category_count = category_service.count()
+        model_count = model_service.count()
 
         # Card data
         cards_data = [
             {"title": "Assets", "count": asset_count, "color": "#3498db", "icon": "💻"},
+            {"title": "Categories", "count": category_count, "color": "#3498db", "icon": "📦"},
+            {"title": "Manufacturers", "count": manufacturer_count, "color": "#3498db", "icon": "🚛"},
+            {"title": "Employees", "count": employee_count, "color": "#3498db", "icon": "⛑️"},
+            {"title": "Models", "count": model_count, "color": "#3498db", "icon": "⚒️"},
             # {"title": "Licenses", "count": license_count, "color": "#2ecc71", "icon": "📜"},
             # {"title": "Accessories", "count": accessory_count, "color": "#e67e22", "icon": "🖱️"},
             # {"title": "Consumables", "count": "3", "color": "#9b59b6", "icon": "📦"},

@@ -198,44 +198,34 @@ def get_all_broken(keyword="") -> list[Asset]:
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
+    base_query = """
+        SELECT 
+            assets.id, 
+            assets.tag, 
+            assets.name, 
+            assets.serialNumber, 
+            models.name, 
+            categories.name, 
+            assets.status, 
+            assets.description,
+            employees.name
+        FROM assets
+        LEFT JOIN models ON assets.model_id = models.id
+        LEFT JOIN categories ON models.category_id = categories.id
+        LEFT JOIN checkouts ON assets.id = checkouts.asset_id AND checkouts.is_active = 1
+        LEFT JOIN employees ON employees.id = checkouts.employee_id
+        WHERE assets.status == 'Broken'
+    """
+
+    params = ()
+
     if keyword:
-        cur.execute("""
-            SELECT 
-                assets.id, 
-                assets.tag, 
-                assets.name, 
-                assets.serialNumber, 
-                models.name, 
-                categories.name, 
-                assets.status, 
-                assets.description,
-                employees.name
-            FROM assets
-            LEFT JOIN models ON assets.model_id = models.id
-            LEFT JOIN categories ON models.category_id = categories.id
-            LEFT JOIN checkouts ON assets.id = checkouts.asset_id AND checkouts.is_active = 1
-            LEFT JOIN employees ON employees.id = checkouts.employee_id
-            WHERE assets.status == 'Broken' AND assets.name LIKE ?
-        """, ('%' + keyword + '%',))
-    else:
-        cur.execute("""
-            SELECT 
-                assets.id, 
-                assets.tag, 
-                assets.name, 
-                assets.serialNumber, 
-                models.name, 
-                categories.name, 
-                assets.status, 
-                assets.description,
-                employees.name
-            FROM assets
-            LEFT JOIN models ON assets.model_id = models.id
-            LEFT JOIN categories ON models.category_id = categories.id
-            LEFT JOIN checkouts ON assets.id = checkouts.asset_id AND checkouts.is_active = 1
-            LEFT JOIN employees ON employees.id = checkouts.employee_id
-            WHERE assets.status == 'Broken'
-        """)
+        base_query += """
+            AND assets.tag LIKE ?
+        """
+        params = ('%' + keyword + '%',)
+    
+    cur.execute(base_query, params)
 
     rows = cur.fetchall()
     conn.close()

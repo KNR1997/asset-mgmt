@@ -130,6 +130,7 @@ def update(
             modelNumber,
             minQuantity,
             qunatity,
+            accessory_id
         ))
 
     conn.commit()

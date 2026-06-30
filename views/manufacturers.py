@@ -222,8 +222,17 @@ class ManufacturersView:
         keyword = self.search_var.get()
         self.load_manufacturers(keyword)
 
+        # Show clear button if search has text
+        if keyword and not self.clear_btn.winfo_ismapped():
+            self.clear_btn.pack(side="left", padx=(0, 5))
+        elif not keyword and self.clear_btn.winfo_ismapped():
+            self.clear_btn.pack_forget()
+
     def clear_search(self):
-        ...
+        """Clear search entry"""
+        self.search_var.set("")
+        self.search_entry = self.clear_btn.master.winfo_children()[1]
+        self.search_entry.focus()
 
     def open_add_modal(self):
         self.open_form("Add Manufacturer")

@@ -73,13 +73,29 @@ def get_all(keyword="") -> list[Model]:
     return models
 
 
+def get_by_name(name):
+    """Get asset by name"""
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM models WHERE name = ?", (name,))
+    result = cur.fetchone()
+    conn.close()
+    return dict(result) if result else None
+
+
 def insert(
-    name, 
-    modelNumber, 
-    description, 
-    category_id, 
+    name,
+    modelNumber,
+    description,
+    category_id,
     manufacturer_id
 ):
+    # Validate uniqueness before insert
+    if get_by_name(name):
+        raise ValueError(f"Model with name '{name}' already exists")
+
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
@@ -105,13 +121,18 @@ def insert(
 
 
 def update(
-    model_id, 
-    name, 
-    modelNumber, 
-    description, 
-    category_id, 
+    model_id,
+    name,
+    modelNumber,
+    description,
+    category_id,
     manufacturer_id
 ):
+    # When updating, exclude the current asset from uniqueness check
+    existing_by_name = get_by_name(name)
+    if existing_by_name and existing_by_name['id'] != category_id:
+        raise ValueError(f"Model with name '{name}' already exists")
+
     conn = sqlite3.connect(DB_NAME)
     cur = conn.cursor()
 
@@ -124,13 +145,13 @@ def update(
             manufacturer_id=? 
         WHERE id=?
         """, (
-            name, 
-            modelNumber, 
-            description, 
-            category_id, 
-            manufacturer_id, 
-            model_id
-        ))
+        name,
+        modelNumber,
+        description,
+        category_id,
+        manufacturer_id,
+        model_id
+    ))
 
     conn.commit()
     conn.close()
@@ -144,3 +165,16 @@ def delete(asset_id):
 
     conn.commit()
     conn.close()
+
+
+def count():
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+
+    cur.execute("SELECT COUNT(*) FROM models")
+
+    total = cur.fetchone()[0]
+
+    conn.close()
+
+    return total

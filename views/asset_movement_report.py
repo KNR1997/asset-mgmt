@@ -1,15 +1,15 @@
 import csv
 import tkinter as tk
-from datetime import datetime
 from tkinter import ttk, messagebox
 from tkinter import ttk, messagebox, filedialog
+from utils.asset.status_with_icon import status_with_icon
 from services import asset_service as asset_service
-from services import repairs_service as repairs_service
+from services import asset_movement_service as asset_movement_service
 
 
-class MaintenanceReportView:
+class AssetMovementReportView:
     def __init__(self, parent):
-        self.broken_assets = []
+        self.asset_movements = []
         self.frame = tk.Frame(parent, bg="#f5f6fa")
         self.frame.pack(fill="both", expand=True)
 
@@ -19,7 +19,7 @@ class MaintenanceReportView:
 
         tk.Label(
             header_frame,
-            text="🛠 Maintenance Reports",
+            text="🛠 Asset Movement Reports",
             font=("Segoe UI", 20, "bold"),
             fg="#2c3e50",
             bg="#f5f6fa"
@@ -60,83 +60,6 @@ class MaintenanceReportView:
         self.export_btn.bind(
             "<Leave>", lambda e: self.export_btn.config(bg="#27ae60")
         )
-
-        # Date filter frame (center)
-        filter_frame = tk.Frame(top, bg="#f5f6fa")
-        filter_frame.pack(side="left", padx=(20, 0))
-
-        tk.Label(
-            filter_frame,
-            text="📅 From:",
-            font=("Segoe UI", 10),
-            bg="#f5f6fa",
-            fg="#2c3e50"
-        ).pack(side="left", padx=(0, 5))
-
-        self.from_date_var = tk.StringVar()
-        self.from_date_entry = tk.Entry(
-            filter_frame,
-            textvariable=self.from_date_var,
-            font=("Segoe UI", 10),
-            bg="white",
-            fg="#2c3e50",
-            relief="solid",
-            borderwidth=1,
-            width=12
-        )
-        self.from_date_entry.pack(side="left", padx=(0, 10))
-        self.from_date_entry.bind("<KeyRelease>", self.on_date_filter)
-
-        # Add placeholder text
-        self.from_date_entry.insert(0, "YYYY-MM-DD")
-        self.from_date_entry.bind(
-            "<FocusIn>", lambda e: self.clear_placeholder(e, "YYYY-MM-DD"))
-        self.from_date_entry.bind(
-            "<FocusOut>", lambda e: self.restore_placeholder(e, "YYYY-MM-DD"))
-
-        tk.Label(
-            filter_frame,
-            text="To:",
-            font=("Segoe UI", 10),
-            bg="#f5f6fa",
-            fg="#2c3e50"
-        ).pack(side="left", padx=(0, 5))
-
-        self.to_date_var = tk.StringVar()
-        self.to_date_entry = tk.Entry(
-            filter_frame,
-            textvariable=self.to_date_var,
-            font=("Segoe UI", 10),
-            bg="white",
-            fg="#2c3e50",
-            relief="solid",
-            borderwidth=1,
-            width=12
-        )
-        self.to_date_entry.pack(side="left", padx=(0, 10))
-        self.to_date_entry.bind("<KeyRelease>", self.on_date_filter)
-
-        # Add placeholder text
-        self.to_date_entry.insert(0, "YYYY-MM-DD")
-        self.to_date_entry.bind(
-            "<FocusIn>", lambda e: self.clear_placeholder(e, "YYYY-MM-DD"))
-        self.to_date_entry.bind(
-            "<FocusOut>", lambda e: self.restore_placeholder(e, "YYYY-MM-DD"))
-
-        # Clear date filter button
-        self.clear_date_btn = tk.Button(
-            filter_frame,
-            text="✖ Clear Dates",
-            font=("Segoe UI", 9),
-            bg="#e74c3c",
-            fg="white",
-            relief="flat",
-            cursor="hand2",
-            command=self.clear_date_filters,
-            padx=10,
-            pady=2
-        )
-        self.clear_date_btn.pack(side="left")
 
         # Search frame (right side)
         search_frame = tk.Frame(top, bg="#f5f6fa")
@@ -213,38 +136,39 @@ class MaintenanceReportView:
             table_frame,
             columns=(
                 "Asset Tag",
-                "Serial Number",
                 "Model",
                 "Category",
-                "Repair Date",
-                "Repair Cost",
+                "Checkout Employee",
+                "Checkout Date",
+                "Expected Checkin Date",
+                "Checkin Date",
                 "Status",
-                "Performed by",
-                "Warranty Covered",
+                "Return Condition",
             ),
             show="headings",
             height=15
         )
 
         self.tree.heading("Asset Tag", text="Asset Tag")
-        self.tree.heading("Serial Number", text="Serial Number")
         self.tree.heading("Model", text="Model")
         self.tree.heading("Category", text="Category")
-        self.tree.heading("Repair Date", text="Repair Date")
-        self.tree.heading("Repair Cost", text="Repair Cost")
+        self.tree.heading("Checkout Employee", text="Checkout Employee")
+        self.tree.heading("Checkout Date", text="Checkout Date")
+        self.tree.heading("Expected Checkin Date",
+                          text="Expected Checkin Date")
+        self.tree.heading("Checkin Date", text="Checkin Date")
         self.tree.heading("Status", text="Status")
-        self.tree.heading("Performed by", text="Performed By")
-        self.tree.heading("Warranty Covered", text="Warranty Covered")
+        self.tree.heading("Return Condition", text="Return Condition")
 
         self.tree.column("Asset Tag", width=80, anchor="center")
-        self.tree.column("Serial Number", width=80, anchor="center")
         self.tree.column("Model", width=80, anchor="center")
         self.tree.column("Category", width=80, anchor="center")
-        self.tree.column("Repair Date", width=80, anchor="center")
-        self.tree.column("Repair Cost", width=300, anchor="center")
-        self.tree.column("Status", width=150, anchor="center")
-        self.tree.column("Performed by", width=150, anchor="center")
-        self.tree.column("Warranty Covered", width=150, anchor="center")
+        self.tree.column("Checkout Employee", width=80, anchor="center")
+        self.tree.column("Checkout Date", width=80, anchor="center")
+        self.tree.column("Expected Checkin Date", width=80, anchor="center")
+        self.tree.column("Checkin Date", width=80, anchor="center")
+        self.tree.column("Status", width=80, anchor="center")
+        self.tree.column("Return Condition", width=80, anchor="center")
 
         # Add scrollbar
         scrollbar = ttk.Scrollbar(
@@ -278,17 +202,7 @@ class MaintenanceReportView:
         for row in self.tree.get_children():
             self.tree.delete(row)
 
-        # Get date filter values
-        from_date = self.from_date_var.get()
-        to_date = self.to_date_var.get()
-        
-        # Check if dates are placeholders or empty
-        if from_date == "YYYY-MM-DD":
-            from_date = ""
-        if to_date == "YYYY-MM-DD":
-            to_date = ""
-
-        rows = repairs_service.get_all(keyword, from_date, to_date)
+        rows = asset_movement_service.get_all(keyword)
 
         for repair in rows:
             self.tree.insert(
@@ -296,75 +210,18 @@ class MaintenanceReportView:
                 tk.END,
                 values=(
                     repair.asset_tag,
-                    repair.asset_serial_number,
-                    repair.asset_model_name,
-                    repair.asset_category_name,
-                    repair.repair_date,
-                    repair.repair_cost,
-                    self.get_status_display(repair.status),
-                    repair.performed_by,
-                    "Yes" if repair.warranty_covered else "No",
+                    repair.model_name,
+                    repair.category_name,
+                    repair.employee_name,
+                    repair.checkout_date,
+                    repair.expected_checkin_date,
+                    repair.actual_checkin_date,
+                    "✅ Active" if repair.is_active else "🚫 Inactive",
+                    status_with_icon(repair.return_condition),
                 )
             )
 
-        self.broken_assets = rows
-
-    def clear_placeholder(self, event, placeholder):
-        """Clear placeholder text when entry gets focus"""
-        if event.widget.get() == placeholder:
-            event.widget.delete(0, tk.END)
-            event.widget.config(fg="#2c3e50")
-
-    def restore_placeholder(self, event, placeholder):
-        """Restore placeholder text if entry is empty"""
-        if not event.widget.get():
-            event.widget.insert(0, placeholder)
-            event.widget.config(fg="#95a5a6")
-
-    def clear_date_filters(self):
-        """Clear date filters and reload data"""
-        self.from_date_var.set("")
-        self.to_date_var.set("")
-        # Restore placeholders
-        self.from_date_entry.delete(0, tk.END)
-        self.from_date_entry.insert(0, "YYYY-MM-DD")
-        self.from_date_entry.config(fg="#95a5a6")
-        self.to_date_entry.delete(0, tk.END)
-        self.to_date_entry.insert(0, "YYYY-MM-DD")
-        self.to_date_entry.config(fg="#95a5a6")
-        self.load_maintenance_reports()
-
-    def on_date_filter(self, event=None):
-        """Handle date filter changes"""
-        from_date = self.from_date_var.get()
-        to_date = self.to_date_var.get()
-
-        # Validate date format if not empty and not placeholder
-        if from_date and from_date != "YYYY-MM-DD":
-            if not self.validate_date(from_date):
-                self.status_label.config(
-                    text="⚠️ Invalid 'From' date format. Use YYYY-MM-DD", fg="#e74c3c")
-                return
-
-        if to_date and to_date != "YYYY-MM-DD":
-            if not self.validate_date(to_date):
-                self.status_label.config(
-                    text="⚠️ Invalid 'To' date format. Use YYYY-MM-DD", fg="#e74c3c")
-                return
-
-        # Clear status message
-        self.status_label.config(text="", fg="#7f8c8d")
-
-        # Reload with filters
-        self.load_maintenance_reports()
-
-    def validate_date(self, date_str):
-        """Validate date string in YYYY-MM-DD format"""
-        try:
-            datetime.strptime(date_str, "%Y-%m-%d")
-            return True
-        except ValueError:
-            return False
+        self.asset_movements = rows
 
     def export_csv(self):
 
@@ -388,14 +245,14 @@ class MaintenanceReportView:
                 # Write headers
                 writer.writerow([
                     "Asset Tag",
-                    "Serial Number",
-                    "Category",
                     "Model",
-                    "Repair Date",
-                    "Repair Cost",
+                    "Category",
+                    "Checkout Employee",
+                    "Checkout Date",
+                    "Expected Checkin Date",
+                    "Checkin Date",
                     "Status",
-                    "Performed By",
-                    "Warranty Covered"
+                    "Return Condition",
                 ])
 
                 # Write table rows
@@ -426,13 +283,6 @@ class MaintenanceReportView:
             self.clear_btn.pack(side="left", padx=(0, 5))
         elif not keyword and self.clear_btn.winfo_ismapped():
             self.clear_btn.pack_forget()
-
-    def get_status_display(self, status):
-        status_map = {
-            "Completed": "✅ Completed",
-        }
-
-        return status_map.get(status, status)
 
     def clear_search(self):
         ...

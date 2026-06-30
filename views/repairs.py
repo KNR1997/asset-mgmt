@@ -1,10 +1,11 @@
 import tkinter as tk
+from datetime import datetime
+from tkcalendar import DateEntry
 from tkinter import ttk, messagebox
+from enums.asset_status import AssetStatus
 from services import asset_service as asset_service
 from services import repairs_service as repairs_service
-from enums.asset_status import AssetStatus
-from datetime import datetime, timedelta
-from tkcalendar import DateEntry
+from utils.asset.status_with_icon import status_with_icon
 
 
 class RepairsView:
@@ -133,8 +134,8 @@ class RepairsView:
             table_frame,
             columns=(
                 "Asset Tag",
-                "Asset Name",
-                "Serial",
+                # "Asset Name",
+                "Serial Number",
                 "Model",
                 "Category",
                 "Status",
@@ -143,16 +144,16 @@ class RepairsView:
             height=15
         )
 
-        self.tree.heading("Asset Tag", text="Asset_Tag")
-        self.tree.heading("Asset Name", text="Asset_Name")
-        self.tree.heading("Serial", text="Serial")
+        self.tree.heading("Asset Tag", text="Asset Tag")
+        # self.tree.heading("Asset Name", text="Asset Name")
+        self.tree.heading("Serial Number", text="Serial Number")
         self.tree.heading("Model", text="Model")
         self.tree.heading("Category", text="Category")
         self.tree.heading("Status", text="Status")
 
         self.tree.column("Asset Tag", width=80, anchor="center")
-        self.tree.column("Asset Name", width=300, anchor="center")
-        self.tree.column("Serial", width=150, anchor="center")
+        # self.tree.column("Asset Name", width=300, anchor="center")
+        self.tree.column("Serial Number", width=150, anchor="center")
         self.tree.column("Model", width=150, anchor="center")
         self.tree.column("Category", width=150, anchor="center")
         self.tree.column("Status", width=200, anchor="center")
@@ -197,11 +198,11 @@ class RepairsView:
                 tk.END,
                 values=(
                     asset.tag,
-                    asset.name,
+                    # asset.name,
                     asset.serial_number,
                     asset.model_name,
                     asset.category_name,
-                    self.get_status_display(asset.status),
+                    status_with_icon(asset.status),
                 )
             )
 
@@ -211,19 +212,17 @@ class RepairsView:
         keyword = self.search_var.get()
         self.load_broken_assets(keyword)
 
-    def get_status_display(self, status):
-        status_map = {
-            "Ready to Deploy": "🟢 Ready to Deploy",
-            "Deployed": "🔵 Deployed",
-            "Broken": "🔴 Broken",
-            "Archived": "⚫ Archived",
-            "Checked Out": "🔵 Checked Out",
-        }
-
-        return status_map.get(status, status)
+        # Show clear button if search has text
+        if keyword and not self.clear_btn.winfo_ismapped():
+            self.clear_btn.pack(side="left", padx=(0, 5))
+        elif not keyword and self.clear_btn.winfo_ismapped():
+            self.clear_btn.pack_forget()
 
     def clear_search(self):
-        ...
+        """Clear search entry"""
+        self.search_var.set("")
+        self.search_entry = self.clear_btn.master.winfo_children()[1]
+        self.search_entry.focus()
 
     def open_add_modal(self):
         self.open_form("Repair Asset")
@@ -235,7 +234,7 @@ class RepairsView:
 
         modal = tk.Toplevel()
         modal.title(title)
-        modal.geometry("350x450")
+        modal.geometry("350x550")
 
         modal.transient(self.frame)
         modal.update_idletasks()
@@ -314,7 +313,7 @@ class RepairsView:
         performed_by_entry = tk.Entry(modal)
         performed_by_entry.pack(fill=tk.X, padx=20)
 
-        create_label(modal, "Notes", required=True)
+        create_label(modal, "Notes")
         notes_entry = tk.Entry(modal)
         notes_entry.pack(fill=tk.X, padx=20)
 
@@ -333,6 +332,10 @@ class RepairsView:
 
             if not repair_cost:
                 messagebox.showwarning("Warning", "Enter repair cost")
+                return
+
+            if not performed_by:
+                messagebox.showwarning("Warning", "Enter performed by details")
                 return
 
             try:
@@ -362,7 +365,39 @@ class RepairsView:
 
             self.load_broken_assets()
 
-        tk.Button(modal, text="Save", command=save).pack(pady=10)
+        # Save and Cancel buttons
+        btn_frame = tk.Frame(modal)
+        btn_frame.pack(pady=20)
+
+        tk.Button(
+            btn_frame,
+            text="💾 Save",
+            command=save,
+            bg="#2ecc71",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            padx=20,
+            pady=8,
+            relief="flat",
+            cursor="hand2"
+        ).pack(side="left", padx=(0, 10))
+
+        tk.Button(
+            btn_frame,
+            text="✖ Cancel",
+            command=modal.destroy,
+            bg="#e74c3c",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            padx=20,
+            pady=8,
+            relief="flat",
+            cursor="hand2"
+        ).pack(side="left")
+
+        # Bind keyboard shortcuts
+        modal.bind("<Return>", lambda e: save())
+        modal.bind("<Escape>", lambda e: modal.destroy())
 
     def on_double_click(self, event):
         ...
